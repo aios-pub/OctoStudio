@@ -1,4 +1,5 @@
 {
+  "agent": null,
   "capabilities": [
     "storage",
     "images",
@@ -6,11 +7,25 @@
     "octos.session.open",
     "octos.turn.start"
   ],
+  "compute": {
+    "instruction_budget": null,
+    "memory_bytes": null
+  },
   "id": "octostudio",
   "integrity": {
-    "bundle_blake3": "df6ca997f28d03f7f44a51d776c098c487461ca4e2815bea455cd26e7fe541f6"
+    "bundle_blake3": "df6ca997f28d03f7f44a51d776c098c487461ca4e2815bea455cd26e7fe541f6",
+    "signature": {
+      "key_id": "amosgeek",
+      "value": "748417d60b417b757c2113fe565b95ad1e26602d63b0cd029448db8eb58e6db27a5dae048e852c49895eead7713d28a8b0135716b54e12cbbfd652ee3fd9a007"
+    }
   },
   "name": "OctoStudio",
+  "network": {
+    "hosts": []
+  },
   "schema": 1,
+  "storage": {
+    "max_bytes": null
+  },
   "version": "0.1.0"
 }
