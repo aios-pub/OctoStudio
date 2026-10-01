@@ -97,15 +97,21 @@ counter `w-N`, not the user's identity).
 **human-review.** Reasons a publisher can act on:
 
 - All gates green: `tools/octo doctor` reports `[ok]` for hub + card-host;
-  the bundle admits cleanly; `tools/octo check` prints `PASSED` with the
-  expected `publisher-signature: unsigned` warning (signing is human-only).
+  the bundle admits cleanly; `tools/octo check --publisher-key amosgeek=…`
+  prints `PASSED` (manifest is signed; signing is documented in
+  `build/ISSUE-SUBMIT.md`).
 - Five real screenshots show the four screens and the documented AI failure
   (`05-ai-error.png`).
 - The two `octos.*` grants and the `images`/`web` grants are all justified
   by either current or planned on-screen behaviour (see Q3).
-- One known honesty point: `listing.json:11` keeps `AmosLi (TODO 替换为发布者名称)`
-  as a deliberately visible placeholder; a human should swap it before the
-  sign step in `docs/PUBLISHING.md`.
+- `platforms` declares `[android, macos, ios, windows, linux]`; only macOS
+  Apple silicon has been run end-to-end with this exact bundle. The other
+  four are declared because Splash is portable and the bundle uses no
+  platform-specific API, but they have not been individually verified —
+  this caveat is recorded in `release_notes`.
+- `publisher.support` is `mailto:amos@aios.pub` (mailto is allowed per
+  `app-policy/listing.rs:118`); `privacy_policy_url` is the published
+  `https://aios.pub/privacy` page.
 - One non-blocker: the reference-image preview is text-only in card-host
   (`main.splash:62` shows the URL, not the picture). `mod.res` is stripped in
   Splash isolates, so a real preview needs a separate image-bytes fetch
@@ -116,7 +122,8 @@ counter `w-N`, not the user's identity).
 
 - `bundle/main.splash` — the whole script; line numbers in this doc match it.
 - `bundle/manifest.json` — capabilities + entry + storage budget.
-- `bundle/listing.json` — public metadata; one TODO in `publisher.name`.
+- `bundle/listing.json` — public metadata; publisher `name = "AmosLi"`,
+  `support = "mailto:amos@aios.pub"`, `privacy_policy_url = "https://aios.pub/privacy"`.
 - `bundle/screenshots/01-home.png` … `05-ai-error.png` — captured on
   2026-10-01 against `card-host 81880` on Apple-silicon macOS.
 - `build/review.json` — the packet this document was written against.
