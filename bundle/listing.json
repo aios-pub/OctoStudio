@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "subtitle": "本地创作工作台 · 设备 AI 二创(在 Rinx 中可用)",
+  "description": "OctoStudio 是面向创作者的工作台:从一段原文、英文片段或参考图出发,在本地保存作品、调用设备助手做改写 / 翻译 / 总结 / 评论,把成稿复制到微信公众号、Markdown、Notion 等外部平台。在 Rinx mini-app 宿主中,octos.session.open + octos.turn.start 可调用设备上的模型完成二创;在 OctoSense 商店和独立 card-host 中,AI 能力被列为未验证。绝不存储密钥或 API token,微信发布由人完成最后一步粘贴。",
+  "category": "productivity",
+  "keywords": ["writing", "remix", "translation", "wechat", "splash", "octosense", "rinx", "studio"],
+  "screenshots": ["screenshots/01-home.png", "screenshots/02-compose.png", "screenshots/03-studio.png", "screenshots/04-export.png", "screenshots/05-ai-error.png"],
+  "icon": "assets/icon.svg",
+  "platforms": ["android", "macos"],
+  "publisher": {
+    "name": "AmosLi (TODO 替换为发布者名称)",
+    "support": "https://example.com/support",
+    "privacy_policy_url": "https://example.com/privacy"
+  },
+  "release_notes": "v0.1.0 首个版本:本地作品库 + 创作工坊;支持参考图;在 Rinx 中可调用设备 AI,在 card-host 中给出明确的'助手不可用'降级。",
+  "age_rating": "all",
+  "license": "Apache-2.0"
+}

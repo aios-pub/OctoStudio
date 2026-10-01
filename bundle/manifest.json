@@ -1,0 +1,16 @@
+{
+  "capabilities": [
+    "storage",
+    "images",
+    "web",
+    "octos.session.open",
+    "octos.turn.start"
+  ],
+  "id": "octostudio",
+  "integrity": {
+    "bundle_blake3": "df6ca997f28d03f7f44a51d776c098c487461ca4e2815bea455cd26e7fe541f6"
+  },
+  "name": "OctoStudio",
+  "schema": 1,
+  "version": "0.1.0"
+}

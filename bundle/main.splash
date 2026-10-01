@@ -1,0 +1,299 @@
+// OctoStudio — 本地创作工作台
+// Rinx 中可控为设备 AI 调起 octos.*;在 card-host / App Hub 中
+// 会返回 no service answers,UI 仍可手动创作并保存。
+
+let mode = 0              // 0 home, 1 compose, 2 studio, 3 export
+let works = []
+let seq = 0                // 单调递增计数器 — 替代时间戳
+let current_id = ""
+let current_title = "未命名作品"
+let current_source = ""
+let current_reference = ""
+let current_content = ""
+let current_style = "改写"
+let busy = false
+let status_text = "就绪"
+let studio_inited = false  // 控制 set_text 是否覆盖用户输入
+
+let ink = #x1c1c1e
+let secondary = #x8e8e93
+let accent = #xff6b35
+let warm_hover = #xeadcd0
+
+fn bump_seq(){
+    seq += 1
+    return seq
+}
+
+fn new_id(){
+    return "w-" + bump_seq().to_string()
+}
+
+fn now_label(){
+    return "#" + bump_seq().to_string()
+}
+
+fn load_works(){
+    if fs.exists("works.json") {
+        let v = fs.read("works.json").parse_json()
+        if v != nil { works = v }
+    }
+    seq = works.len()
+}
+
+fn save_works(){
+    fs.write("works.json", works.to_json())
+}
+
+fn goto(m){
+    mode = m
+    ui.home_view.set_visible(mode == 0)
+    ui.compose_view.set_visible(mode == 1)
+    ui.studio_view.set_visible(mode == 2)
+    ui.export_view.set_visible(mode == 3)
+    ui.tabs.render()
+    ui.works_list.render()
+    if m == 2 {
+        ui.source_preview.set_text(current_source)
+        if !studio_inited {
+            if current_title != "" { ui.title_input.set_text(current_title) }
+            if current_content != "" { ui.content_input.set_text(current_content) }
+            studio_inited = true
+        }
+        if current_reference != "" {
+            ui.reference_label.set_visible(true)
+            ui.reference_caption.set_visible(true)
+            ui.reference_caption.set_text("已记 URL(预览需 Rinx): " + current_reference)
+        } else {
+            ui.reference_label.set_visible(false)
+            ui.reference_caption.set_visible(false)
+        }
+    }
+    if m == 3 {
+        ui.source_preview.set_text(current_source)
+        ui.export_title.set_text(current_title)
+        ui.export_body.set_text(current_content)
+        if current_reference != "" {
+            ui.export_reference_caption.set_text("参考图 URL: " + current_reference)
+            ui.export_reference_caption.set_visible(true)
+        } else {
+            ui.export_reference_caption.set_visible(false)
+        }
+    }
+}
+
+fn start_new(){
+    current_id = new_id()
+    current_title = ""
+    current_source = ""
+    current_reference = ""
+    current_content = ""
+    current_style = "改写"
+    studio_inited = false
+    goto(1)
+}
+
+fn open_work(id){
+    for w in works {
+        if w.id == id {
+            current_id = w.id
+            current_title = w.title
+            current_source = w.source
+            current_reference = (if w.reference != nil {w.reference} else {""})
+            current_content = w.content
+            current_style = w.style
+            studio_inited = false
+            goto(2)
+            return
+        }
+    }
+}
+
+fn upsert_and_save(){
+    let stamp = bump_seq()
+    let kept = []
+    let found = false
+    for w in works {
+        if w.id == current_id {
+            kept.push({id: current_id title: current_title source: current_source reference: current_reference content: current_content style: current_style updated: stamp})
+            found = true
+        } else { kept.push(w) }
+    }
+    if !found {
+        kept.push({id: current_id title: current_title source: current_source reference: current_reference content: current_content style: current_style updated: stamp})
+    }
+    works = kept
+    save_works()
+    status_text = "已保存 · #" + stamp.to_string()
+    ui.status.set_text(status_text)
+    ui.works_list.render()
+}
+
+fn style_prompt(){
+    if current_style == "翻译" { return "把以下内容翻译成中文,保留术语与原文格式:\n\n" }
+    if current_style == "总结" { return "总结以下内容的要点,使用列表形式,每条不超过一行:\n\n" }
+    if current_style == "评论" { return "就以下内容写一段评论,300 字以内:\n\n" }
+    return "改写以下内容,保留原意与核心信息,但换一种表达方式:\n\n"
+}
+
+fn ask_ai(){
+    if busy { return }
+    if current_source == "" {
+        status_text = "原文为空,无法创作"
+        ui.status.set_text(status_text)
+        return
+    }
+    busy = true
+    status_text = "等待助手…"
+    ui.status.set_text(status_text)
+    let prompt = style_prompt() + current_source
+    host.request("octos.session.open", {}, fn(s){
+        if !s.is_ok {
+            status_text = "助手不可用: " + s.error
+            busy = false
+            ui.status.set_text(status_text)
+            return
+        }
+        host.request("octos.turn.start", {text: prompt}, fn(r){
+            if r.is_ok && r.data != nil {
+                current_content = r.data.text
+                status_text = "已创作 · " + now_label()
+            } else {
+                status_text = "助手不可用: " + r.error
+            }
+            busy = false
+            ui.status.set_text(status_text)
+        })
+    })
+}
+
+fn boot(){
+    load_works()
+    status_text = (if host.has("octos.turn.start") {"设备助手权限已授予(在 Rinx 中可用)"} else {"当前 shell 未授予 octos.* 权限"})
+    ui.status.set_text(status_text)
+    ui.works_list.render()
+    goto(0)
+}
+
+start_timeout(0.05, || boot())
+
+root := SolidView{width: Fill height: Fill flow: Down padding: 16 spacing: 10 draw_bg.color: #xfffaf5
+    View{width: Fill height: Fit flow: Right spacing: 8 align: Align{y: 0.5}
+        Label{text: "OctoStudio" draw_text.color: ink draw_text.text_style: theme.font_bold{font_size: 26}}
+        status := Label{width: Fill text: status_text draw_text.color: secondary draw_text.text_style.font_size: 10}
+    }
+    tabs := View{width: Fill height: Fit flow: Right spacing: 6 on_render: || {
+        for i in 4 {
+            ButtonFlat{text: (if i == 0 {"作品"} else if i == 1 {"录入"} else if i == 2 {"创作"} else {"导出"}) height: 32 padding: Inset{left: 14 right: 14}
+                on_click: || goto(i)
+                draw_bg +: {color: (if mode == i {accent} else {#xf5e6dd}) color_hover: (if mode == i {#xff8866} else {#xeadcd0}) border_radius: 16.0 border_size: 0.0}
+                draw_text +: {color: (if mode == i {#xffffff} else {ink}) color_hover: (if mode == i {#xffffff} else {ink})}}
+        }
+    }}
+
+    content := View{width: Fill height: Fill flow: Overlay
+
+        home_view := View{width: Fill height: Fill flow: Down spacing: 10 visible: (mode == 0)
+            View{width: Fill height: Fit flow: Right spacing: 8 align: Align{y: 0.5}
+                Label{width: Fill text: "我的作品" draw_text.color: ink draw_text.text_style: theme.font_bold{font_size: 20}}
+                ButtonFlat{text: "新建作品" height: 36 padding: Inset{left: 14 right: 14} on_click: || start_new()
+                    draw_bg +: {color: accent color_hover: #xff8866 border_radius: 18.0 border_size: 0.0}
+                    draw_text +: {color: #xffffff color_hover: #xffffff}}
+            }
+            Label{text: "本地创作工作台 · 在 Rinx 中可调用设备助手改写 / 翻译 / 总结 / 评论。" draw_text.color: secondary draw_text.text_style.font_size: 11}
+            works_list := ScrollYView{width: Fill height: Fill flow: Down spacing: 10 on_render: || {
+                if works.len() == 0 {
+                    View{width: Fill height: 140 align: Align{x: 0.5 y: 0.5}
+                        Label{text: "还没有作品" draw_text.color: ink draw_text.text_style.font_size: 15}
+                        Label{text: "点上面的\"新建作品\"开始一段创作。" draw_text.color: secondary draw_text.text_style.font_size: 12}
+                    }
+                }
+                for i in works.len() {
+                    GestureView{width: Fill height: Fit padding: Inset{top: 12 bottom: 12 left: 14 right: 14}
+                        draw_bg +: {color: #xffffff color_hover: #xfff5ec border_radius: 10.0 border_size: 0.0}
+                        on_tap: || open_work(works[i].id)
+                        Label{width: Fill text: works[i].title draw_text.color: ink draw_text.text_style.font_size: 17}
+                        Label{width: Fill text: (works[i].style + " · 更新于 " + works[i].updated.to_string()) draw_text.color: secondary draw_text.text_style.font_size: 11}
+                    }
+                }
+            }}
+        }
+
+        compose_view := View{width: Fill height: Fill flow: Down spacing: 10 visible: (mode == 1)
+            Label{text: "录入素材" draw_text.color: ink draw_text.text_style: theme.font_bold{font_size: 20}}
+            Label{text: "可粘贴原文,或填写参考图 URL。URL 抓取不在 v0.1,可在浏览器复制后粘到此处。" draw_text.color: secondary draw_text.text_style.font_size: 11}
+            View{width: Fill height: Fit flow: Down spacing: 4
+                Label{text: "参考图 URL(可选,只读公开 https)" draw_text.color: secondary draw_text.text_style.font_size: 11}
+                reference_input := TextInput{width: Fill height: 36 empty_text: "https://example.com/cover.jpg"
+                    draw_bg +: {color: #xffffff color_hover: #xffffff color_focus: #xffffff color_empty: #xf5e6d2 border_radius: 8.0}
+                    draw_text +: {color: ink color_hover: ink color_focus: ink color_empty: secondary color_empty_hover: secondary}}
+            }
+            source_input := TextInput{width: Fill height: 220 empty_text: "在这里粘贴要创作的原文…"
+                draw_bg +: {color: #xffffff color_hover: #xffffff color_focus: #xffffff color_empty: #xf5e6d2 border_radius: 8.0}
+                draw_text +: {color: ink color_hover: ink color_focus: ink color_empty: secondary color_empty_hover: secondary}}
+            View{width: Fill height: Fit flow: Right spacing: 8 align: Align{y: 0.5}
+                ButtonFlat{text: "返回作品库" height: 40 padding: Inset{left: 18 right: 18} on_click: || goto(0)
+                    draw_bg +: {color: #xf5e6dd color_hover: #xeadcd0 border_radius: 20.0 border_size: 0.0}
+                    draw_text +: {color: ink color_hover: ink}}
+                ButtonFlat{text: "进入创作" height: 40 padding: Inset{left: 18 right: 18} on_click: || { current_source = ui.source_input.text(); current_reference = ui.reference_input.text(); goto(2) }
+                    draw_bg +: {color: accent color_hover: #xff8866 border_radius: 20.0 border_size: 0.0}
+                    draw_text +: {color: #xffffff color_hover: #xffffff}}
+            }
+        }
+
+        studio_view := View{width: Fill height: Fill flow: Down spacing: 8 visible: (mode == 2)
+            Label{text: "创作工坊" draw_text.color: ink draw_text.text_style: theme.font_bold{font_size: 20}}
+            View{width: Fill height: Fit flow: Right spacing: 6
+                for s in ["改写" "翻译" "总结" "评论"] {
+                    ButtonFlat{text: s height: 32 padding: Inset{left: 12 right: 12}
+                        on_click: || current_style = s
+                        draw_bg +: {color: (if current_style == s {accent} else {#xf5e6dd}) color_hover: (if current_style == s {#xff8866} else {#xeadcd0}) border_radius: 16.0 border_size: 0.0}
+                        draw_text +: {color: (if current_style == s {#xffffff} else {ink}) color_hover: (if current_style == s {#xffffff} else {ink})}}
+                }
+            }
+            ButtonFlat{text: (if busy {"创作中…"} else {"AI 创作"}) height: 40 padding: Inset{left: 18 right: 18} on_click: || ask_ai()
+                draw_bg +: {color: (if busy {secondary} else {#xff6b35}) color_hover: (if busy {secondary} else {#xff8866}) border_radius: 20.0 border_size: 0.0}
+                draw_text +: {color: #xffffff color_hover: #xffffff}}
+            title_input := TextInput{width: Fill height: 38 empty_text: current_title
+                draw_bg +: {color: #xffffff color_hover: #xffffff color_focus: #xffffff color_empty: #xf5e6d2 border_radius: 8.0}
+                draw_text +: {color: ink color_hover: ink color_focus: ink color_empty: secondary color_empty_hover: secondary}}
+            reference_label := Label{text: "参考图" draw_text.color: secondary draw_text.text_style.font_size: 11}
+            reference_caption := Label{width: Fill text: "" draw_text.color: secondary draw_text.text_style.font_size: 11}
+            Label{text: "原文" draw_text.color: secondary draw_text.text_style.font_size: 11}
+            ScrollYView{width: Fill height: 90 flow: Down padding: Inset{left: 10 right: 10 top: 8 bottom: 8}
+                draw_bg.color: #xfff5ec draw_bg.border_radius: 8.0
+                source_preview := Label{width: Fill text: current_source draw_text.color: ink draw_text.text_style.font_size: 13}}
+            Label{text: "成稿(可手动修改)" draw_text.color: secondary draw_text.text_style.font_size: 11}
+            content_input := TextInput{width: Fill height: Fill empty_text: "点 AI 创作或直接在此写"
+                draw_bg +: {color: #xffffff color_hover: #xffffff color_focus: #xffffff color_empty: #xf5e6d2 border_radius: 8.0}
+                draw_text +: {color: ink color_hover: ink color_focus: ink color_empty: secondary color_empty_hover: secondary}}
+            View{width: Fill height: Fit flow: Right spacing: 8 align: Align{y: 0.5}
+                ButtonFlat{text: "返回作品库" height: 40 padding: Inset{left: 18 right: 18} on_click: || goto(0)
+                    draw_bg +: {color: #xf5e6dd color_hover: #xeadcd0 border_radius: 20.0 border_size: 0.0}
+                    draw_text +: {color: ink color_hover: ink}}
+                ButtonFlat{text: "保存作品" height: 40 padding: Inset{left: 18 right: 18} on_click: || { let t = ui.title_input.text(); current_title = (if t == "" {"未命名作品"} else {t}); current_content = ui.content_input.text(); upsert_and_save(); goto(0) }
+                    draw_bg +: {color: accent color_hover: #xff8866 border_radius: 20.0 border_size: 0.0}
+                    draw_text +: {color: #xffffff color_hover: #xffffff}}
+            }
+        }
+
+        export_view := View{width: Fill height: Fill flow: Down spacing: 10 visible: (mode == 3)
+            Label{text: "导出" draw_text.color: ink draw_text.text_style: theme.font_bold{font_size: 20}}
+            Label{text: "全选下面文本与参考图说明 → 复制,粘到微信公众号 / Markdown / Notion 等。" draw_text.color: secondary draw_text.text_style.font_size: 11}
+            export_reference_caption := Label{width: Fill text: "" draw_text.color: secondary draw_text.text_style.font_size: 11}
+            ScrollYView{width: Fill height: Fill flow: Down padding: Inset{left: 14 right: 14 top: 14 bottom: 14} spacing: 12
+                draw_bg.color: #xfff5ec draw_bg.border_radius: 10.0
+                export_title := Label{width: Fill text: current_title draw_text.color: ink draw_text.text_style: theme.font_bold{font_size: 22}}
+                export_body := Label{width: Fill text: current_content draw_text.color: ink draw_text.text_style.font_size: 14}
+            }
+            View{width: Fill height: Fit flow: Right spacing: 8 align: Align{y: 0.5}
+                ButtonFlat{text: "返回作品库" height: 40 padding: Inset{left: 18 right: 18} on_click: || goto(0)
+                    draw_bg +: {color: #xf5e6dd color_hover: #xeadcd0 border_radius: 20.0 border_size: 0.0}
+                    draw_text +: {color: ink color_hover: ink}}
+                ButtonFlat{text: "回到创作再改" height: 40 padding: Inset{left: 18 right: 18} on_click: || goto(2)
+                    draw_bg +: {color: accent color_hover: #xff8866 border_radius: 20.0 border_size: 0.0}
+                    draw_text +: {color: #xffffff color_hover: #xffffff}}
+            }
+        }
+    }
+}
