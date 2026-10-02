@@ -1,19 +1,28 @@
-// OctoStudio — 本地创作工作台
-// Rinx 中可控为设备 AI 调起 octos.*;在 card-host / App Hub 中
-// 会返回 no service answers,UI 仍可手动创作并保存。
+// OctoStudio — 本地创作工作台 (v0.2.0)
+// 四屏原流程 + 意图创作(model.complete):一句话生成图文 / 视频文章 plan,
+// 多格式导出(Markdown / 公众号 / Notion),字数,删除,相对时间,重试。
+// 降级:card-host / App Hub 不提供 octos / model 时,UI 继续可手动创作并保存。
 
-let mode = 0              // 0 home, 1 compose, 2 studio, 3 export
+let mode = 0              // 0 home, 1 compose, 2 studio, 3 export, 4 intent_article, 5 intent_video
 let works = []
-let seq = 0                // 单调递增计数器 — 替代时间戳
+let seq = 0
 let current_id = ""
 let current_title = "未命名作品"
 let current_source = ""
 let current_reference = ""
 let current_content = ""
 let current_style = "改写"
+let current_prompt = ""
+let current_plan_title = ""
+let current_plan_sections = []
+let current_plan_scenes = []
+let plan_kind = ""                 // "" | "image" | "video"
+let plan_format = "markdown"       // "markdown" | "wechat" | "notion"
 let busy = false
 let status_text = "就绪"
-let studio_inited = false  // 控制 set_text 是否覆盖用户输入
+let studio_inited = false
+let model_available = false
+let octos_available = false
 
 let ink = #x1c1c1e
 let secondary = #x8e8e93
@@ -33,10 +42,55 @@ fn now_label(){
     return "#" + bump_seq().to_string()
 }
 
+fn demo_article_sections(){
+    return [
+        {heading: "海浪轻拂" body: "清晨六点的海滩,只有浪花与风的对话。脚下的细沙还带着夜的凉意,远方有渔船在薄雾里慢慢靠岸。" image_prompt: "a serene beach at dawn, soft golden light, gentle waves lapping, minimalist style, warm tones"}
+        {heading: "椰影与凉茶" body: "树荫下的吊床轻轻摇晃,一杯冰椰,时间似乎也放慢了脚步。海风从窗纱里挤进来,带来远处浪花的节拍。" image_prompt: "a hammock under coconut trees, tropical iced tea with condensation, soft dappled sunlight, slow life mood"}
+        {heading: "落日告别" body: "太阳慢慢沉入海平线,天空被染成温柔的紫与橘。海风带走一天的喧嚣,只剩下潮汐的低语。" image_prompt: "sunset over calm sea, purple and orange sky gradient, peaceful horizon, cinematic warm light"}
+        {heading: "星空夜话" body: "夜深了,海风轻拂过听浪的人。银河缓缓铺开,星星落在浪尖上,又被浪卷走。" image_prompt: "starry night beach, calm sea, milky way overhead, moonlight reflecting on water, peaceful mood"}
+    ]
+}
+
+fn demo_video_scenes(){
+    return [
+        {id: "S1" duration_s: 5 shot_type: "全景航拍" description: "无人机从远海掠过海岸线,浪花轻拂金色沙滩。" voiceover: "这是一个关于夏日海边慢生活的故事,从清晨的第一缕光开始。" video_prompt: "aerial drone shot of a calm coastline at golden hour, slow motion waves, soft warm light, cinematic 4k"}
+        {id: "S2" duration_s: 8 shot_type: "中景跟拍" description: "主角赤脚走在沙滩上,留下浅浅的脚印。" voiceover: "脚下的细沙还带着夜的凉意,远方有渔船在薄雾里慢慢靠岸。" video_prompt: "medium tracking shot, person walking barefoot on warm sand, gentle waves, soft natural light, slow motion"}
+        {id: "S3" duration_s: 6 shot_type: "特写静物" description: "一杯冰椰的特写,水珠沿着杯壁滑下。" voiceover: "树荫下的吊床轻轻摇晃,一杯冰椰,时间似乎也放慢了脚步。" video_prompt: "close-up of tropical iced coconut drink with ice cubes, condensation on glass, soft dappled light, shallow depth of field"}
+        {id: "S4" duration_s: 10 shot_type: "全景延时" description: "落日延时,天空从金黄变成紫蓝。" voiceover: "太阳慢慢沉入海平线,天空被染成温柔的紫与橘。" video_prompt: "time-lapse sunset over calm sea, golden hour to purple twilight, cinematic color grading"}
+    ]
+}
+
+fn rel_time(stamp){
+    if stamp == nil { return "刚刚" }
+    let d = seq - stamp
+    if d <= 2 { return "刚刚" }
+    if d < 30 { return "" + d.to_string() + " 步前" }
+    if d < 200 { return "" + (d / 10).to_string() + " 分钟前" }
+    return "" + (d / 50).to_string() + " 小时前"
+}
+
+fn word_count(s){
+    if s == nil { return 0 }
+    if s == "" { return 0 }
+    return s.len()
+}
+
 fn load_works(){
     if fs.exists("works.json") {
         let v = fs.read("works.json").parse_json()
-        if v != nil { works = v }
+        if v != nil {
+            let normalized = []
+            for w in v {
+                let fixed = w
+                fixed += {prompt: ""}
+                fixed += {plan_kind: ""}
+                fixed += {plan_title: ""}
+                fixed += {plan_sections: []}
+                fixed += {plan_scenes: []}
+                normalized.push(fixed)
+            }
+            works = normalized
+        }
     }
     seq = works.len()
 }
@@ -51,6 +105,8 @@ fn goto(m){
     ui.compose_view.set_visible(mode == 1)
     ui.studio_view.set_visible(mode == 2)
     ui.export_view.set_visible(mode == 3)
+    ui.intent_article_view.set_visible(mode == 4)
+    ui.intent_video_view.set_visible(mode == 5)
     ui.tabs.render()
     ui.works_list.render()
     if m == 2 {
@@ -63,23 +119,26 @@ fn goto(m){
         if current_reference != "" {
             ui.reference_label.set_visible(true)
             ui.reference_caption.set_visible(true)
-            ui.reference_caption.set_text("已记 URL(预览需 Rinx): " + current_reference)
-        } else {
+            ui.reference_caption.set_text("已记 URL(预览需联网): " + current_reference)
+        }
+        if current_reference == "" {
             ui.reference_label.set_visible(false)
             ui.reference_caption.set_visible(false)
         }
     }
     if m == 3 {
-        ui.source_preview.set_text(current_source)
         ui.export_title.set_text(current_title)
-        ui.export_body.set_text(current_content)
+        ui.export_body.set_text(render_plan_as_text())
         if current_reference != "" {
             ui.export_reference_caption.set_text("参考图 URL: " + current_reference)
             ui.export_reference_caption.set_visible(true)
-        } else {
+        }
+        if current_reference == "" {
             ui.export_reference_caption.set_visible(false)
         }
     }
+    if m == 4 { ui.intent_article_view.set_visible(true); ui.intent_video_view.set_visible(false); ui.home_view.set_visible(false); ui.compose_view.set_visible(false); ui.studio_view.set_visible(false); ui.export_view.set_visible(false); ui.article_title.set_text("图文 plan · " + current_plan_title); ui.article_word.set_text("字数: " + word_count(current_source).to_string()); ui.article_list.render() }
+    if m == 5 { ui.intent_video_view.set_visible(true); ui.intent_article_view.set_visible(false); ui.home_view.set_visible(false); ui.compose_view.set_visible(false); ui.studio_view.set_visible(false); ui.export_view.set_visible(false); ui.video_title.set_text("视频分镜 · " + current_plan_title); ui.video_list.render() }
 }
 
 fn start_new(){
@@ -89,6 +148,23 @@ fn start_new(){
     current_reference = ""
     current_content = ""
     current_style = "改写"
+    current_prompt = ""
+    current_plan_title = ""
+    current_plan_sections = []
+    current_plan_scenes = []
+    plan_kind = ""
+    studio_inited = false
+    goto(1)
+}
+
+fn start_intent(kind){
+    plan_kind = kind
+    current_id = new_id()
+    current_title = ""
+    current_prompt = ""
+    current_plan_title = ""
+    current_plan_sections = []
+    current_plan_scenes = []
     studio_inited = false
     goto(1)
 }
@@ -97,34 +173,52 @@ fn open_work(id){
     for w in works {
         if w.id == id {
             current_id = w.id
-            current_title = w.title
-            current_source = w.source
+            current_title = (if w.title != nil {w.title} else {""})
+            current_source = (if w.source != nil {w.source} else {""})
             current_reference = (if w.reference != nil {w.reference} else {""})
-            current_content = w.content
-            current_style = w.style
+            current_content = (if w.content != nil {w.content} else {""})
+            current_style = (if w.style != nil {w.style} else {"改写"})
+            current_prompt = (if w.prompt != nil {w.prompt} else {""})
+            plan_kind = (if w.plan_kind != nil {w.plan_kind} else {""})
+            current_plan_title = (if w.plan_title != nil {w.plan_title} else {""})
+            current_plan_sections = (if w.plan_sections != nil {w.plan_sections} else {[]})
+            current_plan_scenes = (if w.plan_scenes != nil {w.plan_scenes} else {[]})
             studio_inited = false
+            if plan_kind == "image" { goto(4) return }
+            if plan_kind == "video" { goto(5) return }
             goto(2)
             return
         }
     }
 }
 
+fn delete_work(id){
+    let kept = []
+    for w in works {
+        if w.id != id { kept.push(w) }
+    }
+    works = kept
+    save_works()
+    status_text = "已删除 · " + now_label()
+    ui.status.set_text(status_text)
+    ui.works_list.render()
+}
+
 fn upsert_and_save(){
     let stamp = bump_seq()
     let kept = []
     let found = false
+    let entry = {id: current_id title: current_title source: current_source reference: current_reference content: current_content style: current_style prompt: current_prompt plan_kind: plan_kind plan_title: current_plan_title plan_sections: current_plan_sections plan_scenes: current_plan_scenes updated: stamp}
     for w in works {
         if w.id == current_id {
-            kept.push({id: current_id title: current_title source: current_source reference: current_reference content: current_content style: current_style updated: stamp})
+            kept.push(entry)
             found = true
         } else { kept.push(w) }
     }
-    if !found {
-        kept.push({id: current_id title: current_title source: current_source reference: current_reference content: current_content style: current_style updated: stamp})
-    }
+    if !found { kept.push(entry) }
     works = kept
     save_works()
-    status_text = "已保存 · #" + stamp.to_string()
+    status_text = "已保存 · " + now_label()
     ui.status.set_text(status_text)
     ui.works_list.render()
 }
@@ -143,6 +237,11 @@ fn ask_ai(){
         ui.status.set_text(status_text)
         return
     }
+    if !octos_available {
+        status_text = "octos 助手不可用(降级:可手动创作)"
+        ui.status.set_text(status_text)
+        return
+    }
     busy = true
     status_text = "等待助手…"
     ui.status.set_text(status_text)
@@ -156,7 +255,9 @@ fn ask_ai(){
         }
         host.request("octos.turn.start", {text: prompt}, fn(r){
             if r.is_ok && r.data != nil {
-                current_content = r.data.text
+                current_content = r.data["text"]
+                ui.content_input.set_text(current_content)
+                ui.content_input.render()
                 status_text = "已创作 · " + now_label()
             } else {
                 status_text = "助手不可用: " + r.error
@@ -167,9 +268,217 @@ fn ask_ai(){
     })
 }
 
+fn ask_intent_plan(){
+    if busy { return }
+    if current_prompt == "" {
+        status_text = "意图为空"
+        ui.status.set_text(status_text)
+        return
+    }
+    if !model_available {
+        status_text = "意图创作需要 model 权限(Rinx 中可用)"
+        ui.status.set_text(status_text)
+        return
+    }
+    busy = true
+    status_text = "生成大纲中…"
+    ui.status.set_text(status_text)
+    if plan_kind == "image" {
+        host.request("model.complete", {
+            task: "把用户的一句话意图扩展成 4 段图文文章大纲,每段配一个英文生图 prompt"
+            input: {intent: current_prompt}
+            schema: {type: "object" required: ["title" "summary" "sections"] additionalProperties: false
+                     properties: {
+                         title: {type: "string" maxLength: 40}
+                         summary: {type: "string" maxLength: 200}
+                         sections: {type: "array" minItems: 3 maxItems: 6
+                                    items: {type: "object" required: ["heading" "body" "image_prompt"] additionalProperties: false
+                                            properties: {
+                                                heading: {type: "string" maxLength: 30}
+                                                body: {type: "string" maxLength: 400}
+                                                image_prompt: {type: "string" maxLength: 300}
+                                            }}}
+                     }}
+            class: "strong"
+            allow_urls: false
+        }, fn(r){
+            if r.is_ok {
+                if r.data != nil {
+                    let out = r.data["output"]
+                    if out != nil {
+                        let title_v = out["title"]
+                        let summary_v = out["summary"]
+                        let sections_v = out["sections"]
+                        current_plan_title = (if title_v != nil {title_v} else {current_prompt})
+                        current_title = current_plan_title
+                        current_plan_sections = (if sections_v != nil {sections_v} else {[]})
+                        let summary_s = (if summary_v != nil {summary_v} else {""})
+                        current_source = "【意图】" + current_prompt + "\n\n【摘要】" + summary_s
+                        status_text = "图文 plan 已就绪 · " + current_plan_sections.len().to_string() + " 段"
+                        studio_inited = false
+                        goto(4)
+                    }
+                }
+            } else {
+                current_plan_title = current_prompt
+                current_title = current_plan_title
+                current_plan_sections = demo_article_sections()
+                current_source = "【意图】" + current_prompt + "\n\n【demo 数据,可手动修改】"
+                status_text = "model 不可用,填入演示大纲 · " + current_plan_sections.len().to_string() + " 段"
+                studio_inited = false
+                goto(4)
+            }
+            busy = false
+            ui.status.set_text(status_text)
+        })
+    } else {
+        host.request("model.complete", {
+            task: "把用户的一句话意图扩展成 4–6 镜的视频分镜脚本,每镜含时长/景别/描述/配音/video prompt"
+            input: {intent: current_prompt}
+            schema: {type: "object" required: ["title" "logline" "scenes"] additionalProperties: false
+                     properties: {
+                         title: {type: "string" maxLength: 40}
+                         logline: {type: "string" maxLength: 200}
+                         scenes: {type: "array" minItems: 3 maxItems: 6
+                                  items: {type: "object" required: ["id" "duration_s" "shot_type" "description" "voiceover" "video_prompt"] additionalProperties: false
+                                          properties: {
+                                              id: {type: "string" maxLength: 10}
+                                              duration_s: {type: "integer" minimum: 1 maximum: 60}
+                                              shot_type: {type: "string" maxLength: 20}
+                                              description: {type: "string" maxLength: 200}
+                                              voiceover: {type: "string" maxLength: 300}
+                                              video_prompt: {type: "string" maxLength: 300}
+                                          }}}
+                     }}
+            class: "strong"
+            allow_urls: false
+        }, fn(r){
+            if r.is_ok {
+                if r.data != nil {
+                    let out = r.data["output"]
+                    if out != nil {
+                        let title_v = out["title"]
+                        let logline_v = out["logline"]
+                        let scenes_v = out["scenes"]
+                        current_plan_title = (if title_v != nil {title_v} else {current_prompt})
+                        current_title = current_plan_title
+                        current_plan_scenes = (if scenes_v != nil {scenes_v} else {[]})
+                        let logline_s = (if logline_v != nil {logline_v} else {""})
+                        current_source = "【意图】" + current_prompt + "\n\n【主线】" + logline_s
+                        status_text = "视频 plan 已就绪 · " + current_plan_scenes.len().to_string() + " 镜"
+                        studio_inited = false
+                        goto(5)
+                    }
+                }
+            } else {
+                current_plan_title = current_prompt
+                current_title = current_plan_title
+                current_plan_scenes = demo_video_scenes()
+                current_source = "【意图】" + current_prompt + "\n\n【demo 数据,可手动修改】"
+                status_text = "model 不可用,填入演示分镜 · " + current_plan_scenes.len().to_string() + " 镜"
+                studio_inited = false
+                goto(5)
+            }
+            busy = false
+            ui.status.set_text(status_text)
+        })
+    }
+}
+
+fn render_plan_as_text(){
+    if plan_kind == "image" {
+        let md = "# " + current_plan_title + "\n\n"
+        let i = 0
+        for s in current_plan_sections {
+            let h = s["heading"]
+            let b = s["body"]
+            let p = s["image_prompt"]
+            md = md + "## " + (if h != nil {h} else {"段落"}) + "\n\n" + (if b != nil {b} else {""}) + "\n\n> 生图 prompt: " + (if p != nil {p} else {""}) + "\n\n"
+            i += 1
+        }
+        if plan_format == "markdown" { return md }
+        if plan_format == "wechat" {
+            let mp = current_plan_title + "\n\n"
+            let j = 0
+            for s in current_plan_sections {
+                let h = s["heading"]
+                let b = s["body"]
+                let p = s["image_prompt"]
+                mp = mp + (if h != nil {h} else {"段落"}) + "\n\n" + (if b != nil {b} else {""}) + "\n\n[图片: prompt=" + (if p != nil {p} else {""}) + "]\n\n"
+                j += 1
+            }
+            return mp
+        }
+        let nt = "# " + current_plan_title + "\n\n"
+        let k = 0
+        for s in current_plan_sections {
+            let h = s["heading"]
+            let b = s["body"]
+            let p = s["image_prompt"]
+            nt = nt + "## " + (if h != nil {h} else {"段落"}) + "\n\n" + (if b != nil {b} else {""}) + "\n\n> 🖼 生图 prompt: `" + (if p != nil {p} else {""}) + "`\n\n"
+            k += 1
+        }
+        return nt
+    }
+    if plan_kind == "video" {
+        let md = "# " + current_plan_title + "\n\n"
+        let i = 0
+        for s in current_plan_scenes {
+            let id = s["id"]
+            let dur = s["duration_s"]
+            let shot = s["shot_type"]
+            let desc = s["description"]
+            let vo = s["voiceover"]
+            let vp = s["video_prompt"]
+            md = md + "## Scene " + (if id != nil {id} else {"?"}) + " (" + dur.to_string() + "s · " + (if shot != nil {shot} else {""}) + ")\n\n"
+            md = md + "- 描述: " + (if desc != nil {desc} else {""}) + "\n"
+            md = md + "- 配音: " + (if vo != nil {vo} else {""}) + "\n"
+            md = md + "> 生视频 prompt: " + (if vp != nil {vp} else {""}) + "\n\n"
+            i += 1
+        }
+        if plan_format == "markdown" { return md }
+        if plan_format == "wechat" {
+            let mp = current_plan_title + "\n\n"
+            let j = 0
+            for s in current_plan_scenes {
+                let id = s["id"]
+                let dur = s["duration_s"]
+                let shot = s["shot_type"]
+                let desc = s["description"]
+                let vo = s["voiceover"]
+                mp = mp + "【" + (if id != nil {id} else {"?"}) + " · " + dur.to_string() + "秒 · " + (if shot != nil {shot} else {""}) + "】\n\n"
+                mp = mp + (if desc != nil {desc} else {""}) + "\n\n🎙️ " + (if vo != nil {vo} else {""}) + "\n\n"
+                j += 1
+            }
+            return mp
+        }
+        let nt = "# " + current_plan_title + "\n\n| # | 时长 | 景别 | 描述 | 配音 |\n|---|---|---|---|---|\n"
+        let k = 0
+        for s in current_plan_scenes {
+            let id = s["id"]
+            let dur = s["duration_s"]
+            let shot = s["shot_type"]
+            let desc = s["description"]
+            let vo = s["voiceover"]
+            nt = nt + "| " + (if id != nil {id} else {"?"}) + " | " + dur.to_string() + "s | " + (if shot != nil {shot} else {""}) + " | " + (if desc != nil {desc} else {""}) + " | " + (if vo != nil {vo} else {""}) + " |\n"
+            k += 1
+        }
+        return nt
+    }
+    return current_content
+}
+
 fn boot(){
     load_works()
-    status_text = (if host.has("octos.turn.start") {"设备助手权限已授予(在 Rinx 中可用)"} else {"当前 shell 未授予 octos.* 权限"})
+    model_available = host.has("model")
+    octos_available = host.has("octos.turn.start")
+    if model_available && octos_available {
+        status_text = "octos + model 已就绪(Rinx 中可用)"
+    } else if octos_available {
+        status_text = "octos 已就绪,意图创作待 Rinx 中可用"
+    } else {
+        status_text = "当前 shell 未授予 AI 权限(可手动创作并保存)"
+    }
     ui.status.set_text(status_text)
     ui.works_list.render()
     goto(0)
@@ -183,8 +492,10 @@ root := SolidView{width: Fill height: Fill flow: Down padding: 16 spacing: 10 dr
         status := Label{width: Fill text: status_text draw_text.color: secondary draw_text.text_style.font_size: 10}
     }
     tabs := View{width: Fill height: Fit flow: Right spacing: 6 on_render: || {
-        for i in 4 {
-            ButtonFlat{text: (if i == 0 {"作品"} else if i == 1 {"录入"} else if i == 2 {"创作"} else {"导出"}) height: 32 padding: Inset{left: 14 right: 14}
+        let labels = ["作品" "录入" "创作" "导出" "图文" "视频"]
+        for i in 6 {
+            let label = labels[i]
+            ButtonFlat{text: label height: 32 padding: Inset{left: 14 right: 14}
                 on_click: || goto(i)
                 draw_bg +: {color: (if mode == i {accent} else {#xf5e6dd}) color_hover: (if mode == i {#xff8866} else {#xeadcd0}) border_radius: 16.0 border_size: 0.0}
                 draw_text +: {color: (if mode == i {#xffffff} else {ink}) color_hover: (if mode == i {#xffffff} else {ink})}}
@@ -194,26 +505,41 @@ root := SolidView{width: Fill height: Fill flow: Down padding: 16 spacing: 10 dr
     content := View{width: Fill height: Fill flow: Overlay
 
         home_view := View{width: Fill height: Fill flow: Down spacing: 10 visible: (mode == 0)
-            View{width: Fill height: Fit flow: Right spacing: 8 align: Align{y: 0.5}
+            View{width: Fill height: Fit flow: Right spacing: 6 align: Align{y: 0.5}
                 Label{width: Fill text: "我的作品" draw_text.color: ink draw_text.text_style: theme.font_bold{font_size: 20}}
-                ButtonFlat{text: "新建作品" height: 36 padding: Inset{left: 14 right: 14} on_click: || start_new()
+                ButtonFlat{text: "图文" height: 36 padding: Inset{left: 12 right: 12} on_click: || start_intent("image")
                     draw_bg +: {color: accent color_hover: #xff8866 border_radius: 18.0 border_size: 0.0}
                     draw_text +: {color: #xffffff color_hover: #xffffff}}
+                ButtonFlat{text: "视频" height: 36 padding: Inset{left: 12 right: 12} on_click: || start_intent("video")
+                    draw_bg +: {color: accent color_hover: #xff8866 border_radius: 18.0 border_size: 0.0}
+                    draw_text +: {color: #xffffff color_hover: #xffffff}}
+                ButtonFlat{text: "原文" height: 36 padding: Inset{left: 12 right: 12} on_click: || start_new()
+                    draw_bg +: {color: #xf5e6dd color_hover: #xeadcd0 border_radius: 18.0 border_size: 0.0}
+                    draw_text +: {color: ink color_hover: ink}}
             }
-            Label{text: "本地创作工作台 · 在 Rinx 中可调用设备助手改写 / 翻译 / 总结 / 评论。" draw_text.color: secondary draw_text.text_style.font_size: 11}
+            Label{text: "本地创作工作台 · 一句话生成图文/视频文章大纲,导出至公众号 / Markdown / Notion。长按卡片删除。" draw_text.color: secondary draw_text.text_style.font_size: 11}
             works_list := ScrollYView{width: Fill height: Fill flow: Down spacing: 10 on_render: || {
                 if works.len() == 0 {
                     View{width: Fill height: 140 align: Align{x: 0.5 y: 0.5}
                         Label{text: "还没有作品" draw_text.color: ink draw_text.text_style.font_size: 15}
-                        Label{text: "点上面的\"新建作品\"开始一段创作。" draw_text.color: secondary draw_text.text_style.font_size: 12}
+                        Label{text: "点上面的\"图文 / 视频 / 原文\"开始一段创作。" draw_text.color: secondary draw_text.text_style.font_size: 12}
                     }
                 }
                 for i in works.len() {
+                    let w = works[i]
+                    let title_v = (if w.title != nil {w.title} else {"未命名作品"})
+                    let kind_v = (if w.plan_kind != nil {w.plan_kind} else {"text"})
+                    let style_v = (if w.style != nil {w.style} else {"改写"})
+                    let stamp_v = (if w.updated != nil {w.updated} else {0})
                     GestureView{width: Fill height: Fit padding: Inset{top: 12 bottom: 12 left: 14 right: 14}
                         draw_bg +: {color: #xffffff color_hover: #xfff5ec border_radius: 10.0 border_size: 0.0}
-                        on_tap: || open_work(works[i].id)
-                        Label{width: Fill text: works[i].title draw_text.color: ink draw_text.text_style.font_size: 17}
-                        Label{width: Fill text: (works[i].style + " · 更新于 " + works[i].updated.to_string()) draw_text.color: secondary draw_text.text_style.font_size: 11}
+                        on_tap: || open_work(w.id)
+                        on_long_press: || delete_work(w.id)
+                        View{width: Fill height: Fit flow: Right spacing: 8 align: Align{y: 0.5}
+                            Label{width: Fill text: title_v draw_text.color: ink draw_text.text_style.font_size: 17}
+                            Label{text: (if kind_v == "image" {"📷"} else if kind_v == "video" {"🎬"} else {"📝"}) draw_text.color: secondary draw_text.text_style.font_size: 14}
+                        }
+                        Label{width: Fill text: (style_v + " · 更新于 " + rel_time(stamp_v)) draw_text.color: secondary draw_text.text_style.font_size: 11}
                     }
                 }
             }}
@@ -221,30 +547,51 @@ root := SolidView{width: Fill height: Fill flow: Down padding: 16 spacing: 10 dr
 
         compose_view := View{width: Fill height: Fill flow: Down spacing: 10 visible: (mode == 1)
             Label{text: "录入素材" draw_text.color: ink draw_text.text_style: theme.font_bold{font_size: 20}}
-            Label{text: "可粘贴原文,或填写参考图 URL。URL 抓取不在 v0.1,可在浏览器复制后粘到此处。" draw_text.color: secondary draw_text.text_style.font_size: 11}
-            View{width: Fill height: Fit flow: Down spacing: 4
-                Label{text: "参考图 URL(可选,只读公开 https)" draw_text.color: secondary draw_text.text_style.font_size: 11}
-                reference_input := TextInput{width: Fill height: 36 empty_text: "https://example.com/cover.jpg"
-                    draw_bg +: {color: #xffffff color_hover: #xffffff color_focus: #xffffff color_empty: #xf5e6d2 border_radius: 8.0}
-                    draw_text +: {color: ink color_hover: ink color_focus: ink color_empty: secondary color_empty_hover: secondary}}
+            View{width: Fill height: Fit flow: Right spacing: 6
+                ButtonFlat{text: "粘贴原文" height: 32 padding: Inset{left: 12 right: 12}
+                    on_click: || { plan_kind = ""; ui.paste_hint.set_visible(true); ui.intent_hint.set_visible(false); ui.reference_input.set_visible(true); ui.source_input.set_visible(true); ui.prompt_input.set_visible(false); ui.model_label.set_visible(false); ui.compose_btn.set_visible(true); ui.generate_btn.set_visible(false) }
+                    draw_bg +: {color: (if plan_kind == "" {accent} else {#xf5e6dd}) color_hover: (if plan_kind == "" {#xff8866} else {#xeadcd0}) border_radius: 16.0 border_size: 0.0}
+                    draw_text +: {color: (if plan_kind == "" {#xffffff} else {ink}) color_hover: (if plan_kind == "" {#xffffff} else {ink})}}
+                ButtonFlat{text: "图文意图" height: 32 padding: Inset{left: 12 right: 12}
+                    on_click: || { plan_kind = "image"; ui.paste_hint.set_visible(false); ui.intent_hint.set_visible(true); ui.reference_input.set_visible(false); ui.source_input.set_visible(false); ui.prompt_input.set_visible(true); ui.model_label.set_visible(true); ui.compose_btn.set_visible(false); ui.generate_btn.set_visible(true); ui.prompt_input.set_text("") }
+                    draw_bg +: {color: (if plan_kind == "image" {accent} else {#xf5e6dd}) color_hover: (if plan_kind == "image" {#xff8866} else {#xeadcd0}) border_radius: 16.0 border_size: 0.0}
+                    draw_text +: {color: (if plan_kind == "image" {#xffffff} else {ink}) color_hover: (if plan_kind == "image" {#xffffff} else {ink})}}
+                ButtonFlat{text: "视频意图" height: 32 padding: Inset{left: 12 right: 12}
+                    on_click: || { plan_kind = "video"; ui.paste_hint.set_visible(false); ui.intent_hint.set_visible(true); ui.reference_input.set_visible(false); ui.source_input.set_visible(false); ui.prompt_input.set_visible(true); ui.model_label.set_visible(true); ui.compose_btn.set_visible(false); ui.generate_btn.set_visible(true); ui.prompt_input.set_text("") }
+                    draw_bg +: {color: (if plan_kind == "video" {accent} else {#xf5e6dd}) color_hover: (if plan_kind == "video" {#xff8866} else {#xeadcd0}) border_radius: 16.0 border_size: 0.0}
+                    draw_text +: {color: (if plan_kind == "video" {#xffffff} else {ink}) color_hover: (if plan_kind == "video" {#xffffff} else {ink})}}
             }
+            paste_hint := Label{width: Fill text: "可粘贴原文,或填写参考图 URL。" draw_text.color: secondary draw_text.text_style.font_size: 11}
+            intent_hint := Label{width: Fill text: "一句话描述你想要的图文/视频,AI 会按 schema 生成可编辑的大纲。" draw_text.color: secondary draw_text.text_style.font_size: 11}
+            reference_input := TextInput{width: Fill height: 36 empty_text: "https://example.com/cover.jpg"
+                draw_bg +: {color: #xffffff color_hover: #xffffff color_focus: #xffffff color_empty: #xf5e6d2 border_radius: 8.0}
+                draw_text +: {color: ink color_hover: ink color_focus: ink color_empty: secondary color_empty_hover: secondary}}
             source_input := TextInput{width: Fill height: 220 empty_text: "在这里粘贴要创作的原文…"
                 draw_bg +: {color: #xffffff color_hover: #xffffff color_focus: #xffffff color_empty: #xf5e6d2 border_radius: 8.0}
                 draw_text +: {color: ink color_hover: ink color_focus: ink color_empty: secondary color_empty_hover: secondary}}
+            prompt_input := TextInput{width: Fill height: 100 empty_text: "一句话意图"
+                draw_bg +: {color: #xffffff color_hover: #xffffff color_focus: #xffffff color_empty: #xf5e6d2 border_radius: 8.0}
+                draw_text +: {color: ink color_hover: ink color_focus: ink color_empty: secondary color_empty_hover: secondary}}
+            model_label := Label{width: Fill text: ("模型: " + (if model_available {"model.complete 可用"} else {"未授予(降级为手动大纲)"})) draw_text.color: secondary draw_text.text_style.font_size: 11}
             View{width: Fill height: Fit flow: Right spacing: 8 align: Align{y: 0.5}
                 ButtonFlat{text: "返回作品库" height: 40 padding: Inset{left: 18 right: 18} on_click: || goto(0)
                     draw_bg +: {color: #xf5e6dd color_hover: #xeadcd0 border_radius: 20.0 border_size: 0.0}
                     draw_text +: {color: ink color_hover: ink}}
-                ButtonFlat{text: "进入创作" height: 40 padding: Inset{left: 18 right: 18} on_click: || { current_source = ui.source_input.text(); current_reference = ui.reference_input.text(); goto(2) }
+                compose_btn := ButtonFlat{text: "进入创作" height: 40 padding: Inset{left: 18 right: 18} on_click: || { current_source = ui.source_input.text(); current_reference = ui.reference_input.text(); plan_kind = ""; goto(2) }
                     draw_bg +: {color: accent color_hover: #xff8866 border_radius: 20.0 border_size: 0.0}
+                    draw_text +: {color: #xffffff color_hover: #xffffff}}
+                generate_btn := ButtonFlat{text: (if busy {"生成中…"} else {"生成大纲"}) height: 40 padding: Inset{left: 18 right: 18} on_click: || { current_prompt = ui.prompt_input.text(); ask_intent_plan() }
+                    draw_bg +: {color: (if busy {secondary} else {accent}) color_hover: (if busy {secondary} else {#xff8866}) border_radius: 20.0 border_size: 0.0}
                     draw_text +: {color: #xffffff color_hover: #xffffff}}
             }
         }
 
-        studio_view := View{width: Fill height: Fill flow: Down spacing: 8 visible: (mode == 2)
+        studio_view := View{width: Fill height: Fit flow: Down spacing: 8 visible: (mode == 2)
             Label{text: "创作工坊" draw_text.color: ink draw_text.text_style: theme.font_bold{font_size: 20}}
             View{width: Fill height: Fit flow: Right spacing: 6
-                for s in ["改写" "翻译" "总结" "评论"] {
+                for i in 4 {
+                    let styles = ["改写" "翻译" "总结" "评论"]
+                    let s = styles[i]
                     ButtonFlat{text: s height: 32 padding: Inset{left: 12 right: 12}
                         on_click: || current_style = s
                         draw_bg +: {color: (if current_style == s {accent} else {#xf5e6dd}) color_hover: (if current_style == s {#xff8866} else {#xeadcd0}) border_radius: 16.0 border_size: 0.0}
@@ -252,8 +599,11 @@ root := SolidView{width: Fill height: Fill flow: Down padding: 16 spacing: 10 dr
                 }
             }
             ButtonFlat{text: (if busy {"创作中…"} else {"AI 创作"}) height: 40 padding: Inset{left: 18 right: 18} on_click: || ask_ai()
-                draw_bg +: {color: (if busy {secondary} else {#xff6b35}) color_hover: (if busy {secondary} else {#xff8866}) border_radius: 20.0 border_size: 0.0}
+                draw_bg +: {color: (if busy {secondary} else {accent}) color_hover: (if busy {secondary} else {#xff8866}) border_radius: 20.0 border_size: 0.0}
                 draw_text +: {color: #xffffff color_hover: #xffffff}}
+            ButtonFlat{text: "重试" height: 40 padding: Inset{left: 18 right: 18} on_click: || ask_ai() visible: (!busy)
+                draw_bg +: {color: #xf5e6dd color_hover: #xeadcd0 border_radius: 20.0 border_size: 0.0}
+                draw_text +: {color: ink color_hover: ink}}
             title_input := TextInput{width: Fill height: 38 empty_text: current_title
                 draw_bg +: {color: #xffffff color_hover: #xffffff color_focus: #xffffff color_empty: #xf5e6d2 border_radius: 8.0}
                 draw_text +: {color: ink color_hover: ink color_focus: ink color_empty: secondary color_empty_hover: secondary}}
@@ -264,9 +614,10 @@ root := SolidView{width: Fill height: Fill flow: Down padding: 16 spacing: 10 dr
                 draw_bg.color: #xfff5ec draw_bg.border_radius: 8.0
                 source_preview := Label{width: Fill text: current_source draw_text.color: ink draw_text.text_style.font_size: 13}}
             Label{text: "成稿(可手动修改)" draw_text.color: secondary draw_text.text_style.font_size: 11}
-            content_input := TextInput{width: Fill height: Fill empty_text: "点 AI 创作或直接在此写"
+            content_input := TextInput{width: Fill height: 240 empty_text: "点 AI 创作或直接在此写"
                 draw_bg +: {color: #xffffff color_hover: #xffffff color_focus: #xffffff color_empty: #xf5e6d2 border_radius: 8.0}
                 draw_text +: {color: ink color_hover: ink color_focus: ink color_empty: secondary color_empty_hover: secondary}}
+            Label{width: Fill text: ("字数: 原文 " + word_count(current_source).to_string() + " · 成稿 " + word_count(current_content).to_string()) draw_text.color: secondary draw_text.text_style.font_size: 11}
             View{width: Fill height: Fit flow: Right spacing: 8 align: Align{y: 0.5}
                 ButtonFlat{text: "返回作品库" height: 40 padding: Inset{left: 18 right: 18} on_click: || goto(0)
                     draw_bg +: {color: #xf5e6dd color_hover: #xeadcd0 border_radius: 20.0 border_size: 0.0}
@@ -279,18 +630,104 @@ root := SolidView{width: Fill height: Fill flow: Down padding: 16 spacing: 10 dr
 
         export_view := View{width: Fill height: Fill flow: Down spacing: 10 visible: (mode == 3)
             Label{text: "导出" draw_text.color: ink draw_text.text_style: theme.font_bold{font_size: 20}}
-            Label{text: "全选下面文本与参考图说明 → 复制,粘到微信公众号 / Markdown / Notion 等。" draw_text.color: secondary draw_text.text_style.font_size: 11}
+            Label{text: "全选下面文本 → 复制,粘到目标平台。" draw_text.color: secondary draw_text.text_style.font_size: 11}
             export_reference_caption := Label{width: Fill text: "" draw_text.color: secondary draw_text.text_style.font_size: 11}
+            View{width: Fill height: Fit flow: Right spacing: 6
+                for i in 3 {
+                    let formats = ["markdown" "wechat" "notion"]
+                    let fmt_labels = ["Markdown" "公众号" "Notion"]
+                    let f = formats[i]
+                    let lbl = fmt_labels[i]
+                    ButtonFlat{text: lbl height: 32 padding: Inset{left: 12 right: 12}
+                        on_click: || { plan_format = f; ui.export_body.set_text(render_plan_as_text()); ui.export_body.render() }
+                        draw_bg +: {color: (if plan_format == f {accent} else {#xf5e6dd}) color_hover: (if plan_format == f {#xff8866} else {#xeadcd0}) border_radius: 16.0 border_size: 0.0}
+                        draw_text +: {color: (if plan_format == f {#xffffff} else {ink}) color_hover: (if plan_format == f {#xffffff} else {ink})}}
+                }
+            }
             ScrollYView{width: Fill height: Fill flow: Down padding: Inset{left: 14 right: 14 top: 14 bottom: 14} spacing: 12
                 draw_bg.color: #xfff5ec draw_bg.border_radius: 10.0
                 export_title := Label{width: Fill text: current_title draw_text.color: ink draw_text.text_style: theme.font_bold{font_size: 22}}
-                export_body := Label{width: Fill text: current_content draw_text.color: ink draw_text.text_style.font_size: 14}
+                export_body := Label{width: Fill text: render_plan_as_text() draw_text.color: ink draw_text.text_style.font_size: 14}
             }
             View{width: Fill height: Fit flow: Right spacing: 8 align: Align{y: 0.5}
                 ButtonFlat{text: "返回作品库" height: 40 padding: Inset{left: 18 right: 18} on_click: || goto(0)
                     draw_bg +: {color: #xf5e6dd color_hover: #xeadcd0 border_radius: 20.0 border_size: 0.0}
                     draw_text +: {color: ink color_hover: ink}}
                 ButtonFlat{text: "回到创作再改" height: 40 padding: Inset{left: 18 right: 18} on_click: || goto(2)
+                    draw_bg +: {color: accent color_hover: #xff8866 border_radius: 20.0 border_size: 0.0}
+                    draw_text +: {color: #xffffff color_hover: #xffffff}}
+            }
+        }
+
+        intent_article_view := View{width: Fill height: Fill flow: Down spacing: 8 visible: (mode == 4)
+            article_title := Label{width: Fill text: ("图文 plan · " + current_plan_title) draw_text.color: ink draw_text.text_style: theme.font_bold{font_size: 20}}
+            article_hint := Label{width: Fill text: "每段可手动编辑,生图 prompt 可复制到外部 AI 生图工具。" draw_text.color: secondary draw_text.text_style.font_size: 11}
+            article_list := ScrollYView{width: Fill height: Fill flow: Down spacing: 10 on_render: || {
+                if current_plan_sections.len() == 0 {
+                    Label{text: "尚无大纲" draw_text.color: secondary draw_text.text_style.font_size: 12}
+                }
+                for i in current_plan_sections.len() {
+                    let s = current_plan_sections[i]
+                    let h = s["heading"]
+                    let b = s["body"]
+                    let p = s["image_prompt"]
+                    RoundedView{width: Fill height: Fit flow: Down padding: Inset{top: 10 bottom: 10 left: 12 right: 12} spacing: 6
+                        draw_bg.color: #xfff5ec draw_bg.border_radius: 8.0
+                        Label{width: Fill text: (if h != nil {h} else {"段落"}) draw_text.color: ink draw_text.text_style.font_size: 15}
+                        Label{width: Fill text: (if b != nil {b} else {""}) draw_text.color: ink draw_text.text_style.font_size: 13}
+                        Label{text: "生图 prompt(可全选复制):" draw_text.color: secondary draw_text.text_style.font_size: 11}
+                        Label{width: Fill text: (if p != nil {p} else {""}) draw_text.color: secondary draw_text.text_style.font_size: 12}
+                    }
+                }
+            }}
+            article_word := Label{width: Fill text: ("字数: " + word_count(current_source).to_string()) draw_text.color: secondary draw_text.text_style.font_size: 11}
+            View{width: Fill height: Fit flow: Right spacing: 8 align: Align{y: 0.5}
+                ButtonFlat{text: "返回作品库" height: 40 padding: Inset{left: 18 right: 18} on_click: || goto(0)
+                    draw_bg +: {color: #xf5e6dd color_hover: #xeadcd0 border_radius: 20.0 border_size: 0.0}
+                    draw_text +: {color: ink color_hover: ink}}
+                ButtonFlat{text: "保存作品" height: 40 padding: Inset{left: 18 right: 18} on_click: || upsert_and_save()
+                    draw_bg +: {color: accent color_hover: #xff8866 border_radius: 20.0 border_size: 0.0}
+                    draw_text +: {color: #xffffff color_hover: #xffffff}}
+                ButtonFlat{text: "导出" height: 40 padding: Inset{left: 18 right: 18} on_click: || { plan_format = "markdown"; goto(3) }
+                    draw_bg +: {color: accent color_hover: #xff8866 border_radius: 20.0 border_size: 0.0}
+                    draw_text +: {color: #xffffff color_hover: #xffffff}}
+            }
+        }
+
+        intent_video_view := View{width: Fill height: Fill flow: Down spacing: 8 visible: (mode == 5)
+            video_title := Label{width: Fill text: ("视频分镜 · " + current_plan_title) draw_text.color: ink draw_text.text_style: theme.font_bold{font_size: 20}}
+            video_hint := Label{width: Fill text: "每镜含时长/景别/描述/配音,可全选 video prompt 复制到外部 AI 生视频。" draw_text.color: secondary draw_text.text_style.font_size: 11}
+            video_list := ScrollYView{width: Fill height: Fill flow: Down spacing: 10 on_render: || {
+                if current_plan_scenes.len() == 0 {
+                    Label{text: "尚无分镜" draw_text.color: secondary draw_text.text_style.font_size: 12}
+                }
+                for i in current_plan_scenes.len() {
+                    let s = current_plan_scenes[i]
+                    let id = s["id"]
+                    let dur = s["duration_s"]
+                    let shot = s["shot_type"]
+                    let desc = s["description"]
+                    let vo = s["voiceover"]
+                    let vp = s["video_prompt"]
+                    RoundedView{width: Fill height: Fit flow: Down padding: Inset{top: 10 bottom: 10 left: 12 right: 12} spacing: 4
+                        draw_bg.color: #xfff5ec draw_bg.border_radius: 8.0
+                        Label{text: ("Scene " + (if id != nil {id} else {"?"}) + " · " + dur.to_string() + "s · " + (if shot != nil {shot} else {""})) draw_text.color: ink draw_text.text_style.font_size: 13}
+                        Label{width: Fill text: (if desc != nil {desc} else {""}) draw_text.color: ink draw_text.text_style.font_size: 12}
+                        Label{text: "🎙️ 配音" draw_text.color: secondary draw_text.text_style.font_size: 11}
+                        Label{width: Fill text: (if vo != nil {vo} else {""}) draw_text.color: ink draw_text.text_style.font_size: 12}
+                        Label{text: "生视频 prompt(可全选复制):" draw_text.color: secondary draw_text.text_style.font_size: 11}
+                        Label{width: Fill text: (if vp != nil {vp} else {""}) draw_text.color: secondary draw_text.text_style.font_size: 12}
+                    }
+                }
+            }}
+            View{width: Fill height: Fit flow: Right spacing: 8 align: Align{y: 0.5}
+                ButtonFlat{text: "返回作品库" height: 40 padding: Inset{left: 18 right: 18} on_click: || goto(0)
+                    draw_bg +: {color: #xf5e6dd color_hover: #xeadcd0 border_radius: 20.0 border_size: 0.0}
+                    draw_text +: {color: ink color_hover: ink}}
+                ButtonFlat{text: "保存作品" height: 40 padding: Inset{left: 18 right: 18} on_click: || upsert_and_save()
+                    draw_bg +: {color: accent color_hover: #xff8866 border_radius: 20.0 border_size: 0.0}
+                    draw_text +: {color: #xffffff color_hover: #xffffff}}
+                ButtonFlat{text: "导出" height: 40 padding: Inset{left: 18 right: 18} on_click: || { plan_format = "markdown"; goto(3) }
                     draw_bg +: {color: accent color_hover: #xff8866 border_radius: 20.0 border_size: 0.0}
                     draw_text +: {color: #xffffff color_hover: #xffffff}}
             }

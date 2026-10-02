@@ -5,7 +5,8 @@
     "images",
     "web",
     "octos.session.open",
-    "octos.turn.start"
+    "octos.turn.start",
+    "model"
   ],
   "compute": {
     "instruction_budget": null,
@@ -13,11 +14,7 @@
   },
   "id": "octostudio",
   "integrity": {
-    "bundle_blake3": "749271a641b74f9c8613888deec5d02bbf0aea0cebf173297ca152cf5936a974",
-    "signature": {
-      "key_id": "amosgeek",
-      "value": "9c7bd605f83d0222ccd3546bbd8cb4b2647968ee5295e41e527250d6a0e77644b3ce72d9280364669ae8822a51a434beb81987203b794ad26adc4301d1db8305"
-    }
+    "bundle_blake3": "ded06e4c2e06e113d38dfe0674880f3e9477d12e2cf0d1af128ca439fbb39829"
   },
   "name": "OctoStudio",
   "network": {
@@ -27,5 +24,5 @@
   "storage": {
     "max_bytes": null
   },
-  "version": "0.1.0"
+  "version": "0.2.0"
 }

@@ -39,23 +39,33 @@ two-platform convention is followed, no claim of "everywhere".
 
 ## 3. Do the granted capabilities match what the app visibly does?
 
-Five capabilities declared in `manifest.json`:
+Six capabilities declared in `manifest.json`:
 
 | capability            | used for                                                | source reference              |
 | --------------------- | ------------------------------------------------------- | ----------------------------- |
-| `storage`             | `works.json` (the local work library)                    | `main.splash:34`, `:42`       |
+| `storage`             | `works.json` (the local work library)                    | `main.splash` `load_works` / `save_works` |
 | `images`              | declared for the (future) reference-image preview slot  | `studio_view` caption in `goto()` |
 | `web`                 | unused on screen (declared for the Rinx-side image load) | not invoked in card-host flow  |
-| `octos.session.open`  | start a session with the device assistant                | `main.splash:142`             |
-| `octos.turn.start`    | submit the styled prompt, receive the rewrite/translation | `main.splash:149`           |
+| `octos.session.open`  | start a session with the device assistant                | `ask_ai()`                    |
+| `octos.turn.start`    | submit the styled prompt, receive the rewrite/translation | `ask_ai()`                   |
+| `model`               | one-shot model call with a strict JSON schema, producing an image-article or video-storyboard plan | `ask_intent_plan()` |
 
-No host requests beyond the two `octos.*` services. No `network.hosts`. The
+`model` is the new v0.2 grant. It is used by two of the three Compose modes
+("图文意图" and "视频意图"); the schema-validated reply is rendered on the
+`intent_article_view` / `intent_video_view` screens, and the same fields are
+written to `works.json` so the work persists. In `card-host` (and in any
+App-Hub build that does not register a `model` host service) the call returns
+`no service answers "model" on this device`; the UI degrades to a pre-baked
+demo outline so the screens remain demonstrable. The plan is honest about
+this in `release_notes`.
+
+No host requests beyond the three services above. No `network.hosts`. The
 `images` and `web` grants are over-broad for what the card-host build actually
 shows on screen — they exist so the same bundle, when run inside Rinx, can
 render the reference image the user typed and (later) load article URLs from
 the clipboard. **For the card-host-only path the minimum could be
-`storage, octos.session.open, octos.turn.start`.** Leaving the broader set is a
-deliberate trade: same `bundle/` works in both shells.
+`storage, octos.session.open, octos.turn.start, model`.** Leaving the broader
+set is a deliberate trade: same `bundle/` works in both shells.
 
 No grant is invoked that has no on-screen reason.
 
@@ -100,10 +110,10 @@ counter `w-N`, not the user's identity).
   the bundle admits cleanly; `tools/octo check --publisher-key amosgeek=…`
   prints `PASSED` (manifest is signed; signing is documented in
   `build/ISSUE-SUBMIT.md`).
-- Five real screenshots show the four screens and the documented AI failure
-  (`05-ai-error.png`).
-- The two `octos.*` grants and the `images`/`web` grants are all justified
-  by either current or planned on-screen behaviour (see Q3).
+- Eight real screenshots show the six screens, the `model.complete` degraded
+  path (06 → 07 / 08) and the three export formats (04 / 09).
+- The three `octos.*` / `model` grants and the `images`/`web` grants are all
+  justified by either current or planned on-screen behaviour (see Q3).
 - `platforms` declares `[android, macos, ios, windows, linux]`; only macOS
   Apple silicon has been run end-to-end with this exact bundle. The other
   four are declared because Splash is portable and the bundle uses no
@@ -112,11 +122,13 @@ counter `w-N`, not the user's identity).
 - `publisher.support` is `mailto:amos@aios.pub` (mailto is allowed per
   `app-policy/listing.rs:118`); `privacy_policy_url` is the published
   `https://aios.pub/privacy` page.
-- One non-blocker: the reference-image preview is text-only in card-host
-  (`main.splash:62` shows the URL, not the picture). `mod.res` is stripped in
-  Splash isolates, so a real preview needs a separate image-bytes fetch
-  path; for the v0.1 store-curl demo we accept this and call it out in the
-  description ("在 Rinx 中可调用设备 AI").
+- One non-blocker: when the device cannot reach a real `model` host service
+  (card-host, App Hub pin), `ask_intent_plan` fills a pre-baked demo
+  outline so the screens remain demonstrable. The pre-baked copy is
+  obviously demo material and the status line reads
+  `model 不可用,填入演示大纲 · 4 段` / `填入演示分镜 · 4 镜`. The listing
+  description and `release_notes` name Rinx as the runtime where the real
+  plan is generated.
 
 ## Files referenced
 
@@ -124,8 +136,11 @@ counter `w-N`, not the user's identity).
 - `bundle/manifest.json` — capabilities + entry + storage budget.
 - `bundle/listing.json` — public metadata; publisher `name = "AmosLi"`,
   `support = "mailto:amos@aios.pub"`, `privacy_policy_url = "https://aios.pub/privacy"`.
-- `bundle/screenshots/01-home.png` … `05-ai-error.png` — captured on
-  2026-10-01 against `card-host 81880` on Apple-silicon macOS.
+- `bundle/screenshots/01-home.png` … `09-export-formats.png` — captured on
+  2026-10-02 against the local `card-host` (Apple-silicon macOS). v0.2.0
+  ships the eight screenshots referenced by `listing.json`; the old
+  `05-ai-error.png` from v0.1 was retired (the `octos` and `model` degraded
+  states are now visible in 06 → 07 / 08).
 - `build/review.json` — the packet this document was written against.
 - `BRIEF.md` — the original brief that defines "done".
 
@@ -141,3 +156,15 @@ Per `OctoScript-App-Design-Flow/docs/PUBLISHING.md` step 9-10:
    `OctoSense-org/OctoSense-App-Hub`.
 
 The agent does not run any of these.
+
+## Changelog
+
+- **v0.2.0 (2026-10-02)** — added the `model` capability; new
+  "intent-compose" path generates an image-article or video-storyboard plan
+  via `model.complete`; new 4th and 5th screens (`intent_article_view`,
+  `intent_video_view`) render the plan and export it as Markdown / 公众号 /
+  Notion; works stored in v0.2 carry `prompt / plan_kind / plan_title /
+  plan_sections / plan_scenes` (v0.1 works are normalised on load);
+  Home supports long-press delete; Studio shows word count; AI failure in
+  card-host fills a pre-baked demo outline so the screens remain
+  demonstrable. `bundle_blake3` and signature refresh needed before submit.

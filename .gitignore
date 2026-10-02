@@ -4,3 +4,6 @@ target/
 *.key
 *.cert
 .DS_Store
+.idea/
+*.iml
+.vscode/

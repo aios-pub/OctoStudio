@@ -52,14 +52,15 @@
 
 | 能力 | 用途 | 屏/动作 |
 |---|---|---|
-| `storage` | 存作品 | 1, 3, 4 |
-| `images` | 显示参考图(`https://`,只读) | 3, 4 |
-| `web` | 打开公开 https 网页(可选,用于参考阅读) | 文档中说明,本 v0.1 未主动调用 |
+| `storage` | 存作品 | 1, 3, 4, 5, 6 |
+| `images` | 显示参考图(`https://`,只读);以及未来图片 plan 的回填预览 | 3, 6 |
+| `web` | 打开公开 https 网页(可选,用于参考阅读) | 文档中说明,本 v0.2 未主动调用 |
 | `octos.session.open` | 设备 AI peer(在 Rinx 中可用) | 3 |
 | `octos.turn.start` | 创作改写/翻译(在 Rinx 中可用) | 3 |
+| `model` | 一次性模型调用(在 Rinx / OctoSense Shell 中可用) | 2 → 4, 5 |
 
-不申请 `net`(无特定主机列表)、`camera`(本 v0.1 不截图)、`library`、`mail`、`model`、`llm`、
-`news`、`glance`、`location` 等,本 v0.1 不涉及。
+不申请 `net`(无特定主机列表)、`camera`(本 v0.2 不截图)、`library`、`mail`、`llm`、
+`news`、`glance`、`location` 等,本 v0.2 不涉及。
 
 ## 状态(必测)
 
@@ -70,6 +71,20 @@
 | AI 正在生成 | 3 | `AI 创作` 按钮禁用,显示"等待助手…" |
 | 参考图为空 | 3, 4 | 隐藏参考图区域,不显示破图 |
 | 参考图 URL 错误 | 3, 4 | 占位符或友好提示,不崩溃 |
+| model 不可用(card-host) | 1, 2 | "意图创作需要 model 权限(Rinx 中可用)";demo 降级填入演示大纲 / 分镜 |
+| model 正在生成 | 2 | "生成中…"按钮禁用 |
+| model 失败(无 provider / 超预算 / 输出不合 schema) | 2 → 4, 5 | 显示失败原因 + 仍落 demo 草稿 |
+
+## 屏幕(v0.2.0,6 屏)
+
+| # | 屏幕 | 主要控件 | 主要动作 |
+| --- | --- | --- | --- |
+| 1 | 作品库(Home) | 卡片(标题 + 风格 + 类型 emoji + 相对时间)、`图文` / `视频` / `原文` 按钮 | 进入第 2 屏 / 打开已有作品 / 长按删除 |
+| 2 | 录入(Compose) | 模式 chip(`粘贴原文` / `图文意图` / `视频意图`)、参考图 URL、原文输入、prompt 输入 | 原文 → 跳 Studio;意图 → `model.complete` 生成 |
+| 3 | 创作工坊(Studio) | 风格(改写/翻译/总结/评论)、`AI 创作` / `重试`、原文预览、成稿输入、字数统计 | `octos.turn.start` 改写 |
+| 4 | 图文 plan | 标题 + 段落卡片(heading / body / 生图 prompt) + 字数 + 保存 / 导出 | `model.complete` 图文 schema;失败填 demo |
+| 5 | 视频分镜 plan | 标题 + 场景卡片(时长/景别/描述/配音/生视频 prompt) + 保存 / 导出 | `model.complete` 视频 schema;失败填 demo |
+| 6 | 导出(Export) | 标题预览、参考图说明、Markdown / 公众号 / Notion 切换按钮、成稿预览 | 多格式导出至外部平台 |
 
 ## 边界 / 不做
 
