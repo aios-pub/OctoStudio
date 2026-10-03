@@ -1,33 +1,139 @@
 # OctoStudio
 
-> **本地创作工作台 · 设备 AI 二创(在 Rinx 中可用)**
+> **本地创作工作台 · AI 改写 + 图文/视频意图生成 + 公众号 / Markdown / Notion 一键导出**
 
-OctoStudio 是一个 OctoSense **脚本应用** — 整个应用就是 `bundle/main.splash` 一个文件,被 Splash VM 解释执行,运行在 `card-host` 隔离沙箱里。它提供作品库 → 录入 → 创作 → 导出 四步流程;在 Rinx 中可调用设备 AI 做改写 / 翻译 / 总结 / 评论,在独立 `card-host` 中助手返回 `no service answers`,UI 仍可手动创作并保存。
+![Home — 作品库 + 6 个 tab + 3 个新建按钮](bundle/screenshots/01-home.png)
 
-## 这是什么形态的应用?
+OctoStudio 是跑在 [OctoSense](https://github.com/OctoSense-org) 设备上的脚本应用 — 整个应用就是一个 `main.splash` 文件,在隔离沙箱里被 Splash VM 解释执行。它面向中文内容创作者(公众号作者 / Markdown 写作者 / 视频脚本写手):**用一句话或一段原文,生成可发布到多个平台的内容,作品全部存在你设备本地,AI 用的是你设备上的模型而非云端 API。**
 
-OctoSense 脚本应用是一个小巧、隔离运行的应用包,**只有 `bundle/` 会被提交**:
-
-```text
-octostudio/
-├── README.md                ← 你正在读
-├── BRIEF.md                 设计意图
-├── REVIEW-ANSWERS.md        答 hub scan 7 个审核问题
-├── build/review.json        hub scan packet
-├── bundle/                  ★ THE SUBMISSION
-│   ├── manifest.json        id、name、version、capabilities、hosts、integrity
-│   ├── listing.json         商店展示的元数据
-│   ├── main.splash          程序本体(298 行,Splash 脚本)
-│   ├── assets/icon.svg      列表上的图标
-│   └── screenshots/         真实截图(01-home … 05-ai-error)
-├── AGENTS.md  CLAUDE.md  GEMINI.md   Agent 规则(从模板复制,不提交)
-├── .gitignore               忽略 build/ / target/ / .local-state/ / *.key
-└── .local-state/            card-host 的 jail + log(本地调试用,不提交)
-```
-
-**`main.splash` 本身就是程序**。它不是配置文件,没有 .py / .rs / .ts 配套。整个应用是一个被 Splash VM 解释执行的脚本应用,顶层 `let` 是状态、`fn` 是函数,然后一个根 View。
+`v0.2.0` · 736 行 Splash · 6 屏 · 8 张真实截图 · Apache-2.0
 
 ---
+
+## 这是什么
+
+OctoStudio 是给 **中文内容创作者** 用的本地优先、AI 增强的创作工作台。它把"从一段原文 / 一句话意图 → 可发布到多平台"这条链做成一键流程,跑在 Rinx / OctoSense 设备上 — 作品存设备沙箱,跨设备不离开你的控制,调用的是用户设备上的 AI(密钥由 AI providers 系统应用托管)。
+
+## 痛点 — 创作者面对的真问题
+
+1. **多平台分发繁琐**:同一篇文章要粘到公众号后台、Markdown 编辑器、Notion,每次都重新调格式
+2. **AI 改写生硬**:通用模型改出来"风格统一",但跟你自己的语气对不上,改完还得手动润色
+3. **视频脚本难起手**:从一句话想法到分镜表,中间缺一座桥
+4. **每次都得手写**:参考资料管理、版本管理、风格管理都靠脑子记,工具散在剪贴板 / 网盘 / 浏览器收藏夹
+
+OctoStudio 把这四件事压缩到一台设备上的一个 app 里。
+
+## 它做什么
+
+| # | 能力 | 用到的平台能力 | 截图 |
+|---|---|---|---|
+| 1 | **原文改写 / 翻译 / 总结 / 评论** — 粘贴一段原文,选风格,AI 出成稿 | `octos.turn.start` | [`03-studio.png`](bundle/screenshots/03-studio.png) |
+| 2 | **一句话生成图文文章大纲** — 输入主题,AI 按 schema 出标题 + 摘要 + 4 段正文 + 每段英文生图 prompt | `model.complete` + `images` | [`06-intent-compose.png`](bundle/screenshots/06-intent-compose.png) → [`07-intent-article.png`](bundle/screenshots/07-intent-article.png) |
+| 3 | **一句话生成视频分镜脚本** — 同上,出场景表(时长 / 景别 / 描述 / 配音 / 生视频 prompt) | `model.complete` | [`08-intent-video.png`](bundle/screenshots/08-intent-video.png) |
+| 4 | **多格式导出** — Markdown / 公众号 / Notion 三种格式,一键全选复制 | 纯文本转换 | [`04-export.png`](bundle/screenshots/04-export.png) / [`09-export-formats.png`](bundle/screenshots/09-export-formats.png) |
+| 5 | **本地作品库** + 字数统计 + 相对时间 + 长按删除,全部存设备沙箱 | `storage` | [`01-home.png`](bundle/screenshots/01-home.png) |
+| 6 | **降级完备** — 任何 AI 服务不可用,UI 仍可手动创作并保存,失败路径明示 | `host.has()` 探测 + 预置 demo 数据 | [`02-compose.png`](bundle/screenshots/02-compose.png) |
+
+未来规划(见 [`ROADMAP.md`](ROADMAP.md)):
+
+- **个人风格工坊**(v0.3.0)— 粘贴 3–5 篇自己文章,应用分析风格指纹,新建作品可选"按我的风格写"
+- **主题网络抓取**(v0.3.0)— 用户给主题词,应用从公开数据源拉素材,带来源记录
+- **拟人化文章生成**(v0.4.0)— 选定主题素材 + 风格 → 一键生成仿个人风格文章
+
+## 5 分钟走一遍
+
+1. **打开作品库** — 看两张已有作品 + 顶部 3 个新建按钮:`图文 / 视频 / 原文`
+
+   ![Home](bundle/screenshots/01-home.png)
+
+2. **粘贴原文走经典改写** — 点 `原文`,粘一段中文,进 Studio,选"翻译"风格,点 `AI 创作`,成稿直接落在输入框里,可继续手动改
+
+   ![Compose](bundle/screenshots/02-compose.png)
+
+3. **改写与重试** — Studio 屏顶有 4 个风格按钮 + AI 创作 / 重试;AI 不可用时 `重试` 按钮仍可用,UI 继续可手动创作
+
+   ![Studio](bundle/screenshots/03-studio.png)
+
+4. **一句话生成图文 plan** — 回到 Compose,选 `图文意图` chip,输入"夏日海边慢生活",点 `生成大纲`,图文 plan(标题 + 摘要 + 4 段正文 + 每段英文生图 prompt)落在 `图文 plan · ` 屏,prompt 可全选复制到外部 AI 生图工具
+
+   ![Intent compose](bundle/screenshots/06-intent-compose.png)
+
+   ![Article plan](bundle/screenshots/07-intent-article.png)
+
+5. **一句话生成视频分镜** — 同上,选 `视频意图`,AI 出 4–6 镜(时长 / 景别 / 描述 / 配音 / 生视频 prompt)
+
+   ![Video plan](bundle/screenshots/08-intent-video.png)
+
+6. **导出到目标平台** — 切到 Export 屏,选 `Markdown / 公众号 / Notion` 三种格式,全选文本 → 复制 → 粘贴到公众号后台 / Notion / Markdown 编辑器
+
+   ![Export markdown](bundle/screenshots/04-export.png)
+
+   ![Export Notion](bundle/screenshots/09-export-formats.png)
+
+## 设计理念
+
+四条核心信念,贯穿所有屏幕:
+
+1. **本地优先** — 作品存设备沙箱,跨设备同步靠 OctoSense 而非云端账号;**无密钥 / 无 token / 无账号注册**。
+2. **平台原生 AI** — 在 Rinx / OctoSense 设备上调用宿主 AI(`octos.*` + `model`),用户密钥由 AI providers 系统应用托管,应用本身看不到模型 id 或 API key。
+3. **透明降级** — AI 不可用时 UI 仍可手动创作并保存;失败原因原样显示在状态栏,不静默吞掉。意图创作在 model 不可用时填入预置 demo 数据,并在状态栏明示"演示大纲,非模型生成"。
+4. **多格式出口** — 创作链的最后一站对接到真实发布平台(公众号 / Markdown / Notion),不是又一个"AI playground"。
+
+## 平台能力
+
+OctoStudio 用到的 OctoSense 平台能力(声明在 `bundle/manifest.json`):
+
+| 能力 | 角色 | 落在哪些屏幕 |
+|---|---|---|
+| `octos.session.open / octos.turn.start` | 设备 AI peer,改写 / 翻译 / 总结 / 评论 | Studio 屏 `AI 创作` |
+| `model.complete` | 一次性、按 schema 校验的模型调用;意图创作 + 未来风格分析 / 拟人化写作的主路径 | Compose 屏 `生成大纲` |
+| `images` | 显示参考图(`https://`,只读) | Studio 屏参考图区域 |
+| `web` | 打开公开 https 网页(预留,本 v0.2 未主动调用) | — |
+| `storage` | 作品库落盘 | 所有屏 |
+
+应用本身不持有任何密钥或 token,所有 AI 请求由宿主服务代理。
+
+## 不做什么
+
+**平台红线(永不做)**:
+
+- 不申请 `llm / news / mail / profile`(仅系统应用可用,商店申请必拒)
+- 不收集密码 / PIN / 一次性码
+- `network.hosts` 保持空数组,所有 https 资源走 `images`(公开域)或用户回填的 URL;`net` capability 本 v0.2 不申请
+- 不写 `os.*` id(这是商店应用,不是系统应用)
+- 不在 bundle 中放 token / API key / 私钥
+
+**v0.2 不做(规划中)**:
+
+- 应用内一键生图 / 生视频 — 平台 `octos.*` / `model.*` 当前无 image / video output,等 OctoSense 扩展
+- 视频预览 / 播放 — SCRIPT-API 当前无 video widget,等 `OctoScript-Makepad` 跟进
+- 一键发公众号 — 凭据不入包,保持"复制粘贴到后台"的克制设计
+
+**降级路径(明示)**:
+
+- `card-host` / 旧 App Hub pin 不提供 `octos.*` / `model`:UI 全程可手动创作并保存,所有 AI 失败显示 `no service answers "<svc>" on this device` 原文
+- `model` 不可用时,意图创作填入预置 demo 大纲 + 状态栏写 `model 不可用,填入演示大纲`
+- 微信 OAuth / secret:不接,人到后台粘贴
+
+## 接下来
+
+完整迭代路线见 [`ROADMAP.md`](ROADMAP.md)。当前状态:
+
+| 里程碑 | 版本 | 状态 |
+|---|---|---|
+| M0 / M1 意图创作 + 多格式导出 | v0.2.0 | ✅ 已落地 |
+| M2 创作者工作流补齐(字数 / 删除 / 多格式 / 重试 / 相对时间) | v0.2.x | 部分落地 |
+| M3 个人风格工坊 + 主题网络抓取 | v0.3.0 | 规划中 |
+| M4 `model.complete` 高阶用法(起标题 / 摘要 / 关键词提取) | v0.4.0 | 规划中 |
+| M5 拟人化文章生成 | v0.4.0 | 规划中 |
+| M6 glance 卡片(发布到 glance 屏) | v0.5.0 | 规划中 |
+| M7 等平台(视频 widget / 触发器 / toolbox-peers / `sys.digest`) | — | 等 OctoSense |
+
+---
+
+# 给开发者
+
+下面这一节是给协作者看的 — 怎么把工具链跑起来、怎么改 `main.splash`、怎么发版。初赛评审可跳过。
 
 ## 前置条件
 
@@ -53,8 +159,6 @@ octostudio/
 
 本项目 (`octostudio/`) 是第六个目录,在工作区外面随便放哪里都行,不在依赖图中。
 
----
-
 ## 一次性构建工具链
 
 进入工作区,从 `OctoSense-App-Hub` 编译两个二进制(总产物约 1 GB,首次约 1 分钟):
@@ -74,7 +178,27 @@ tools/octo doctor    # 应该全部 [ok]
 
 > 产物路径:`$CARGO_TARGET_DIR/release/{hub,card-host}`,默认会找到。如果你的 CARGO_TARGET_DIR 不一样,设置 `OCTO_HUB=/path/to/hub` / `OCTO_CARD_HOST=/path/to/card-host` 即可。
 
----
+## 仓库结构
+
+```text
+octostudio/
+├── README.md                ← 你正在读
+├── BRIEF.md                 设计意图
+├── REVIEW-ANSWERS.md        答 hub scan 7 个审核问题
+├── ROADMAP.md               迭代路线
+├── build/                   hub scan packet(不进 git)
+├── bundle/                  ★ THE SUBMISSION
+│   ├── manifest.json        id、name、version、capabilities、hosts、integrity
+│   ├── listing.json         商店展示的元数据
+│   ├── main.splash          程序本体(736 行,Splash 脚本)
+│   ├── assets/icon.svg      列表上的图标
+│   └── screenshots/         8 张真实截图(01 / 02 / 03 / 04 / 06 / 07 / 08 / 09)
+├── AGENTS.md  CLAUDE.md  GEMINI.md   Agent 规则(从模板复制,不提交)
+├── .gitignore               忽略 build/ / target/ / .local-state/ / *.key
+└── .local-state/            card-host 的 jail + log(本地调试用,不提交)
+```
+
+**`main.splash` 本身就是程序**。它不是配置文件,没有 .py / .rs / .ts 配套。整个应用是一个被 Splash VM 解释执行的脚本应用,顶层 `let` 是状态、`fn` 是函数,然后一个根 View。
 
 ## 看到页面 — 三种模式
 
@@ -86,7 +210,7 @@ tools/octo run /Users/lijing/CodeProjects/octostudio/bundle \
     --port 8142 --hidden --detach
 
 # 输出示例:
-#   card-host: octostudio 0.1.0 admitted — capabilities {…}
+#   card-host: octostudio 0.2.0 admitted — capabilities {…}
 #   ready: first frame drawn
 #   pid 81880  log /Users/lijing/CodeProjects/octostudio/.local-state/card-host.log
 ```
@@ -138,8 +262,6 @@ tools/octo run /Users/lijing/CodeProjects/octostudio/bundle --port 8142
 
 手机上:目前**不能**把任意应用包侧载到普通 OctoSense 手机。手机商店读取内置的 hub,只信任编译进构建的信任锚;`OCTOSENSE_HUB` / `OCTOSENSE_HUB_ANCHOR` 是环境变量,Android 启动器不会设置。`card-host` 的远程控制桥在 Android 上被编译移除。
 
----
-
 ## 开发循环
 
 ### 改完一次,看到的下一次启动要重启
@@ -155,7 +277,7 @@ pkill -f card-host
 # 或:curl -s http://127.0.0.1:8142/quit
 
 # 3. 重启
-tools/octo run /Users/lijing/CodeProjects/octostudio/bundle --port 8142 --hidden --detach
+tools/octo run /Volumes/PSSD/CodeProjects/octostudio/bundle --port 8142 --hidden --detach
 
 # 4. 立刻看一下首屏对不对
 tools/octo shot 8142 /tmp/octo_dev.png
@@ -178,17 +300,17 @@ curl -s "127.0.0.1:8142/d" | head -30
 ### 模拟点击
 
 ```sh
-# 点 home 页的 "新建作品" 按钮(右上角,坐标 x=327 y=166 是 CSS 点)
-curl -s "127.0.0.1:8142/click?x=327&y=166&wait=1"
+# 点 home 页的 "图文" 按钮(顶部右侧,坐标 x=275 y=181 是 CSS 点)
+curl -s "127.0.0.1:8142/click?x=275&y=181&wait=1"
 
 # 输入文本(需先 focus 输入框 — 上面那个 click 已经 focus 了)
-curl -s --get "http://127.0.0.1:8142/t" --data-urlencode "t=AI 写作并不是…"
+curl -s --get "http://127.0.0.1:8142/t" --data-urlencode "t=夏日海边慢生活"
 ```
 
 完整截图捕获:
 
 ```sh
-tools/octo shot 8142 /Users/lijing/CodeProjects/octostudio/bundle/screenshots/01-home.png
+tools/octo shot 8142 /Volumes/PSSD/CodeProjects/octostudio/bundle/screenshots/01-home.png
 ```
 
 > 截图是在 **App 自身渲染管线**里出的图(应用自己把 PNG 写到磁盘),即使在 `--hidden` 下也能拿到完整画面。
@@ -196,7 +318,7 @@ tools/octo shot 8142 /Users/lijing/CodeProjects/octostudio/bundle/screenshots/01
 ### 看日志(出错时第一件事)
 
 ```sh
-tail -30 /Users/lijing/CodeProjects/octostudio/.local-state/card-host.log
+tail -30 /Volumes/PSSD/CodeProjects/octostudio/.local-state/card-host.log
 # 找 [E] splash: line:col - … 错误行
 # [SPLASH] eval: NN bytes 后面是编译错误
 ```
@@ -209,27 +331,22 @@ Splash isolate **剥离**了 `mod.fs` / `mod.run` / `mod.res` / `mod.cx.quit`,�
 
 时间戳用 `std::time::SystemTime` 也拿不到 — Splash 没有暴露这个 API。OctoStudio 里用一个 `seq` 单调递增计数器代替。随机数同理,自己做 seed。
 
----
-
 ## 跑 `octo check`(准入检查)
 
 ```sh
 cd /Users/lijing/CodeProjects/OctoScript-App-Design-Flow
-tools/octo check /Users/lijing/CodeProjects/octostudio/bundle
+tools/octo check /Volumes/PSSD/CodeProjects/octostudio/bundle
 ```
 
-期望输出:
+期望输出(v0.2.0):
 
 ```text
-octostudio 0.1.0 — PASSED
+octostudio 0.2.0 — PASSED
   [warning] publisher-signature: unsigned: accountability rests on the hub alone
-  grants: capabilities {"images", "octos.session.open", "octos.turn.start", "storage", "web"}, hosts {}, storage 16777216 bytes, agent none
-octo: note: listing.json still holds template placeholders (example.com); the gate accepts them, a reviewer will not.
+  grants: capabilities {"images", "model", "octos.session.open", "octos.turn.start", "storage", "web"}, hosts {}, storage 16777216 bytes, agent none
 ```
 
 `check` 先 `hub stamp` 写入 `bundle_blake3` 到 `manifest.json`,再 `hub check --allow-unsigned`。如果拒绝,看具体哪个权限或 listing 字段被拒。
-
----
 
 ## 写新功能
 
@@ -261,13 +378,11 @@ UI 组件:
 - `View{flow: Down/Right/Overlay padding: … spacing: … width: Fill height: Fill/Fit}`
 - `Image{src: … fit: ImageFit.CropToFill}`
 - `ScrollYView{…}` 滚动容器
-- `tabs.on_render: || { … }` 闭包形式的动态生成,**记得显式 `ui.<name>.render()` 触发重绘**
+- 闭包形式的动态生成,**用 `set_visible` + `set_text` 触发重绘**(`render()` 在某些 View 上不稳定)
 - 切屏:`ui.a.set_visible(false); ui.b.set_visible(true)`(`Overlay` 父容器里)
 - 模态:`show_dialog(modalId)`
 
 API 全部见 [`docs/SCRIPT-API.md`](https://github.com/OctoSense-org/OctoScript-App-Design-Flow/blob/main/docs/SCRIPT-API.md);Gotchas 部分节省 80% 的调试时间。
-
----
 
 ## 发布到 App Hub
 
@@ -282,24 +397,22 @@ API 全部见 [`docs/SCRIPT-API.md`](https://github.com/OctoSense-org/OctoScript
 hub keygen /secure/path/publisher.key
 
 # 3. 签名
-hub sign-manifest /Users/lijing/CodeProjects/octostudio/bundle \
+hub sign-manifest /Volumes/PSSD/CodeProjects/octostudio/bundle \
   --key /secure/path/publisher.key --key-id amosgeek
 
 # 4. 带密钥重检
-hub check /Users/lijing/CodeProjects/octostudio/bundle \
+hub check /Volumes/PSSD/CodeProjects/octostudio/bundle \
   --publisher-key amosgeek=$(hub pubkey /secure/path/publisher.key)
 
 # 5. 在 GitHub 上打 tag
-git tag octostudio-0.1.0 && git push origin octostudio-0.1.0
+git tag octostudio-0.2.0 && git push origin octostudio-0.2.0
 
 # 6. 在 OctoSense-App-Hub 开 issue
-#    标题:Submit octostudio 0.1.0
+#    标题:Submit octostudio 0.2.0
 #    附:tag、commit、bundle 路径、publisher 公钥、check 输出、REVIEW-ANSWERS.md
 ```
 
 签名之后任何修改都要重新 stamp + 签名。
-
----
 
 ## 故障排除
 
@@ -309,12 +422,12 @@ git tag octostudio-0.1.0 && git push origin octostudio-0.1.0
 | `[E] splash: line:col - method X not found` | 调了不存在的 API | 查 `docs/SCRIPT-API.md` |
 | `[E] splash: line:col - variable X not found` | 用了 `fs / run / res / cx.quit` 之一 | 这些在 isolate 里被剥成 nil,改用自己的实现 |
 | 首屏出来后一直是 loading | `start_timeout(0.05, || boot())` 没跑,或 boot 报错 | 看 `card-host.log` 的 `[SPLASH] eval:` 后面 |
-| `ai` 按钮点了之后状态不变 | `host.request("octos.turn.start", …)` 返回 `{ok: false, error: …}` | card-host 不提供宿主服务 — 这是 README §"应用中的 AI" 描述的降级,UI 应给出"no service answers" |
+| `AI 创作` 按钮点了之后状态不变 | `host.request("octos.turn.start", …)` 返回 `{ok: false, error: …}` | card-host 不提供宿主服务 — 这是 README §"降级路径"描述的降级,UI 应给出 `no service answers` |
+| `生成大纲` 卡在 "生成大纲中…" | model 不可用且 demo 分支没触发 | 看 status_text 是否被覆盖;检查 `ask_intent_plan()` 回调分支 |
 | 截图里输入框是空的 | 输入后没等渲染就 shot 了 | 加 `--settle 2`(默认 2 秒) |
+| chip 切换后子控件不变 | `visible: (expr)` 只求值一次 | 用 `set_visible()` 程序控制 |
 | 改了 main.splash 没生效 | card-host 还在跑旧版本 | `pkill -f card-host` 再重启 |
 | `hub check` 报 `refused listing: …` | listing 引用了不存在的文件 | 真实截图放进 `bundle/screenshots/` |
-
----
 
 ## 相关链接
 
@@ -322,8 +435,11 @@ git tag octostudio-0.1.0 && git push origin octostudio-0.1.0
 - [`OctoSense-App-Hub`](https://github.com/OctoSense-org/OctoSense-App-Hub) — `hub` / `card-host` / 商店
 - [`docs/SCRIPT-API.md`](https://github.com/OctoSense-org/OctoScript-App-Design-Flow/blob/main/docs/SCRIPT-API.md) — Splash 语言 + 全部 API
 - [`docs/CAPABILITIES.md`](https://github.com/OctoSense-org/OctoScript-App-Design-Flow/blob/main/docs/CAPABILITIES.md) — 每种权限解锁什么、用户看到什么
-- [`docs/AI-SERVICES.zh-CN.md`](https://github.com/OctoSense-org/OctoScript-App-Design-Flow/blob/main/docs/AI-SERVICES.zh-CN.md) — `octos.*` 当前能做什么、规划
+- [`docs/AI-SERVICES.zh-CN.md`](https://github.com/OctoSense-org/OctoScript-App-Design-Flow/blob/main/docs/AI-SERVICES.zh-CN.md) — `octos.*` / `model.*` 当前能做什么、规划
 - [`docs/PUBLISHING.md`](https://github.com/OctoSense-org/OctoScript-App-Design-Flow/blob/main/docs/PUBLISHING.md) — 发布到 App Hub
+- [`BRIEF.md`](BRIEF.md) — 设计意图
+- [`REVIEW-ANSWERS.md`](REVIEW-ANSWERS.md) — 答 hub scan 7 个审核问题
+- [`ROADMAP.md`](ROADMAP.md) — 迭代路线
 
 ## 许可证
 
