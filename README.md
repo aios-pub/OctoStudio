@@ -576,11 +576,11 @@ hub keygen /secure/path/publisher.key
 
 # 3. 签名
 hub sign-manifest /Volumes/PSSD/CodeProjects/octostudio/bundle \
-  --key /secure/path/publisher.key --key-id amosgeek
+  --key /secure/path/publisher.key --key-id amosarc
 
 # 4. 带密钥重检
 hub check /Volumes/PSSD/CodeProjects/octostudio/bundle \
-  --publisher-key amosgeek=$(hub pubkey /secure/path/publisher.key)
+  --publisher-key amosarc=$(hub pubkey /secure/path/publisher.key)
 
 # 5. 在 GitHub 上打 tag
 git tag octostudio-0.2.0 && git push origin octostudio-0.2.0

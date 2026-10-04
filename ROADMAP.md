@@ -234,9 +234,9 @@ tools/octo check /Users/lijing/CodeProjects/octostudio/bundle    # 必须 PASSED
 # 提交(若是 v0.2.0 / v0.3.0 等,需要重签:)
 hub stamp /Users/lijing/CodeProjects/octostudio/bundle
 hub sign-manifest /Users/lijing/CodeProjects/octostudio/bundle \
-    --key /secure/path/publisher.key --key-id amosgeek
+    --key /secure/path/publisher.key --key-id amosarc
 hub check /Users/lijing/CodeProjects/octostudio/bundle \
-    --publisher-key amosgeek=$(hub pubkey /secure/path/publisher.key)
+    --publisher-key amosarc=$(hub pubkey /secure/path/publisher.key)
 ```
 
 ---
@@ -244,7 +244,7 @@ hub check /Users/lijing/CodeProjects/octostudio/bundle \
 ## 风险与备注
 
 - **M1 必须重签** —— v0.2.0 改了 `manifest.json` 的 `capabilities` 与 `bundle_blake3`,
-  原 v0.1.0 的 amosgeek 签名即失效。签名步骤由发布者完成,我不跑。
+  原 v0.1.0 的 amosarc 签名即失效。签名步骤由发布者完成,我不跑。
 - **M1 的 `model` 配额** —— 用户每日 100 calls / 100K tokens / 每分钟 6 calls,
   应用内要在调用前先 `model.budget` 看一眼,不要把用户配额一次打空。
 - **M5 glance 的应用配额** —— 每分钟最多 6 次发布,每个应用 4 张卡,存储共 32 张,

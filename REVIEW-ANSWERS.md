@@ -107,7 +107,7 @@ counter `w-N`, not the user's identity).
 **human-review.** Reasons a publisher can act on:
 
 - All gates green: `tools/octo doctor` reports `[ok]` for hub + card-host;
-  the bundle admits cleanly; `tools/octo check --publisher-key amosgeek=…`
+  the bundle admits cleanly; `tools/octo check --publisher-key amosarc=…`
   prints `PASSED` (manifest is signed; signing is documented in
   `build/ISSUE-SUBMIT.md`).
 - Eight real screenshots show the six screens, the `model.complete` degraded
