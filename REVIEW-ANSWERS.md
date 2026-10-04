@@ -159,6 +159,27 @@ The agent does not run any of these.
 
 ## Changelog
 
+- **v0.3.0 (2026-10-04)** — "创作广场" rewrite: 5 screens (广场/录入/工坊/计划/导出),
+  10 scenario entries with 9 AI generation scenarios (image article, video
+  storyboard, PPT deck, video teardown, title workshop, 小红书 note, 口播稿,
+  mindmap, quotes) all driven by `model.complete` with per-scenario JSON
+  schemas; generic plan editor (per-item edit / move / delete / add) —
+  v0.2 advertised "可手动编辑" but only rendered read-only labels, now real;
+  10 article themes + 5 video style presets injected into prompts and
+  persisted per work; studio style ops 4→8; AI composition advice
+  (transition/BGM/pacing/grade/subtitle/output) as a second model call;
+  new export formats: Marp (PPT), SRT subtitles (deterministic timeline
+  from storyboard durations), 视频制作包 (materials + SRT + composition +
+  ffmpeg reference), markmap; optional AI illustration via keyless public
+  image service under the existing `images` capability (offline degrades to
+  prompt text, toggleable); works.json gains plan_items/plan_summary/theme/
+  composition with nil-guarded defaults (v0.2 `+=` overwrite bug fixed — it
+  erased loaded fields), empty legacy ids normalised, v0.1/v0.2 files
+  auto-migrate with legacy mirror fields preserved; ScrollYView on_render
+  closure-capture workaround (inner View) and literal-arg closure split
+  documented in code. Capabilities unchanged (`network.hosts` stays empty).
+  Re-stamp + re-sign needed before submit.
+
 - **v0.2.0 (2026-10-02)** — added the `model` capability; new
   "intent-compose" path generates an image-article or video-storyboard plan
   via `model.complete`; new 4th and 5th screens (`intent_article_view`,

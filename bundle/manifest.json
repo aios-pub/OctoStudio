@@ -14,7 +14,7 @@
   },
   "id": "octostudio",
   "integrity": {
-    "bundle_blake3": "ded06e4c2e06e113d38dfe0674880f3e9477d12e2cf0d1af128ca439fbb39829"
+    "bundle_blake3": "7724d5fb1c449ce35bd010a9eefa50e41e45b2132ecee2ca2076c1a4675592e3"
   },
   "name": "OctoStudio",
   "network": {
@@ -24,5 +24,5 @@
   "storage": {
     "max_bytes": null
   },
-  "version": "0.2.0"
+  "version": "0.3.0"
 }

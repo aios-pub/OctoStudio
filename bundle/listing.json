@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "subtitle": "本地创作工作台 · 一句话生成图文/视频文章",
-  "description": "OctoStudio v0.2.0 本地创作工作台:粘贴原文走 octos 助手改写/翻译/总结/评论;一句话生成图文文章大纲(标题+段落+生图 prompt);一句话生成视频分镜(时长/景别/描述/配音/生视频 prompt);多格式导出 Markdown / 公众号 / Notion。所有能力在 Rinx 中可用,card-host 中降级为手动创作并保存。",
+  "subtitle": "本地 AI 创作工作台 · 一句话生成图文/分镜/PPT/口播",
+  "description": "OctoStudio v0.3.0 全品类 AI 创作工作台:场景广场 10 选——原文二创(改写/翻译/总结/评论/润色/续写/扩写/小红书体)、图文文章、视频分镜、PPT 演示、拆解视频、标题工坊、小红书笔记、口播稿、思维导图、金句语录;通用计划编辑器(增删改排)与文章主题样式 10 款;导出 Markdown / 公众号 / Notion / Marp / SRT 字幕 / 视频制作包 / markmap;可选 AI 配图(images capability 公网免鉴权,离线自动降级)。Rinx 中 AI 全量可用,card-host/App Hub 降级为演示内容,仍可编辑保存。",
   "category": "productivity",
   "keywords": [
     "writing",
@@ -16,14 +16,14 @@
     "studio"
   ],
   "screenshots": [
-    "screenshots/01-home.png",
-    "screenshots/02-compose.png",
-    "screenshots/03-studio.png",
-    "screenshots/04-export.png",
-    "screenshots/06-intent-compose.png",
-    "screenshots/07-intent-article.png",
-    "screenshots/08-intent-video.png",
-    "screenshots/09-export-formats.png"
+    "screenshots/01-plaza.png",
+    "screenshots/02-compose-theme.png",
+    "screenshots/03-article-images.png",
+    "screenshots/04-edit-panel.png",
+    "screenshots/05-ppt-plan.png",
+    "screenshots/06-video-comp.png",
+    "screenshots/07-export-srt.png",
+    "screenshots/08-export-pack.png"
   ],
   "icon": "assets/icon.svg",
   "platforms": [
@@ -38,7 +38,7 @@
     "support": "mailto:amos@aios.pub",
     "privacy_policy_url": "https://aios.pub/privacy"
   },
-  "release_notes": "v0.2.0 新增意图创作:model.complete 一句话生成图文文章大纲(标题+摘要+4段正文+每段英文生图 prompt)与视频分镜(4–6 镜,各含时长/景别/描述/配音/生视频 prompt);Export 屏加多格式导出 Markdown / 公众号 / Notion;Home 屏支持长按删除;Studio 屏字数统计;时间显示按 seq 估算相对值。在 macOS Apple silicon 实测;其他平台 Splash 通用支持,未逐个验证。",
+  "release_notes": "v0.3.0 场景大扩容:新增 PPT 生成/编辑/Marp 导出、视频合成建议+制作包(SRT/ffmpeg)、拆解视频存为分镜模板、标题工坊、小红书笔记、口播稿、思维导图(markmap)、金句语录;工坊风格操作 4→8;文章主题样式 10 款随作品保存;计划编辑器支持逐条编辑/上移下移/删除/新增;修复 v0.2 空作品 id 与 model 空返回的降级漏洞;works.json 向后兼容。",
   "age_rating": "all",
   "license": "Apache-2.0"
 }
