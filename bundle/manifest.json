@@ -14,10 +14,10 @@
   },
   "id": "octostudio",
   "integrity": {
-    "bundle_blake3": "7f9ace9a03c1eeebe2d96c1cff6b238758660bb5b2c3e1beda013426dc5b94ac",
+    "bundle_blake3": "76602bf4566415e3e57bf6c387603f98e7eebace73abb7d089b61ae6c1a4ec55",
     "signature": {
       "key_id": "amosgeek",
-      "value": "3d999f1f5d0c78e731246f5b705fa8195a5cdd5362b33ee3ea4db476004df8ae0c836ee8075ddab5de46b212937bc9b413f44c58c2aaa8911f1fa35da0735e0a"
+      "value": "c6002d31d7bb2ddc15b48583e9bb6a69ed86b4a37dc1938514392db8b9b57183233c9098d3cff8213445f5875206cec6bac2206472beeedae6002fd9e447a909"
     }
   },
   "name": "OctoStudio",
