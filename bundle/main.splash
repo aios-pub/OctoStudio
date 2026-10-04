@@ -26,6 +26,7 @@ let current_composition = nil        // 视频合成建议
 let images_on = true                 // 生图增强开关
 let editing_k = -1                  // 计划编辑器:正在编辑条目的 _k 键,-1 关闭
 let busy = false
+let gen_timer = nil                 // 生成看门狗:慢响应超 70s 时复位 busy,避免卡死
 let status_text = "就绪"
 let studio_inited = false
 let model_available = false
@@ -50,6 +51,24 @@ fn new_id(){
 
 fn now_label(){
     return "#" + bump_seq().to_string()
+}
+
+// host.request 的回调在慢响应(>60s)时会被桥的超时丢弃;70 秒看门狗兜底复位,
+// 让用户可以立刻重试(状态栏明示),而不是永远停在"生成中"。
+fn arm_watchdog(){
+    if gen_timer != nil { stop_timer(gen_timer) }
+    gen_timer = start_timeout(70.0, || {
+        if busy {
+            busy = false
+            status_text = "AI 响应超时(>70 秒),已复位 — 请再点一次生成"
+            ui.status.set_text(status_text)
+            ui.generate_btn.set_text(gen_label(plan_kind))
+        }
+    })
+}
+
+fn disarm_watchdog(){
+    if gen_timer != nil { stop_timer(gen_timer) }
 }
 
 fn sval(v){
@@ -1110,6 +1129,7 @@ fn ask_scenario(){
         return
     }
     busy = true
+    arm_watchdog()
     status_text = gen_status(plan_kind)
     ui.status.set_text(status_text)
     ui.generate_btn.set_text("生成中…")
@@ -1120,6 +1140,7 @@ fn ask_scenario(){
         class: "strong"
         allow_urls: false
     }, fn(r){
+        disarm_watchdog()
         let good = false
         if r.is_ok {
             if r.data != nil {
@@ -1157,6 +1178,7 @@ fn ask_composition(){
         return
     }
     busy = true
+    arm_watchdog()
     status_text = "生成合成建议…"
     ui.status.set_text(status_text)
     host.request("model.complete", {
@@ -1174,6 +1196,7 @@ fn ask_composition(){
         class: "strong"
         allow_urls: false
     }, fn(r){
+        disarm_watchdog()
         let done = false
         if r.is_ok {
             if r.data != nil {
@@ -1732,11 +1755,11 @@ fn boot(){
     model_available = host.has("model")
     octos_available = host.has("octos.turn.start")
     if model_available && octos_available {
-        status_text = "octos + model 已就绪(Rinx 中可用)"
+        status_text = "octos + model 已就绪"
     } else if octos_available {
-        status_text = "octos 已就绪,场景生成待 Rinx 中可用"
+        status_text = "octos 已就绪,场景生成待 model 权限"
     } else {
-        status_text = "当前 shell 未授予 AI 权限(演示内容可编辑保存)"
+        status_text = "当前环境未授予 AI 权限(演示内容可编辑保存)"
     }
     ui.status.set_text(status_text)
     ui.works_inner.render()
