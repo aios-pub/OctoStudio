@@ -38,7 +38,7 @@
     "support": "mailto:amos@aios.pub",
     "privacy_policy_url": "https://aios.pub/privacy"
   },
-  "release_notes": "v0.3.0 场景大扩容:新增 PPT 生成/编辑/Marp 导出、视频合成建议+制作包(SRT/ffmpeg)、拆解视频存为分镜模板、标题工坊、小红书笔记、口播稿、思维导图(markmap)、金句语录;工坊风格操作 4→8;文章主题样式 10 款随作品保存;计划编辑器支持逐条编辑/上移下移/删除/新增;修复 v0.2 空作品 id 与 model 空返回的降级漏洞;works.json 向后兼容。",
+  "release_notes": "v0.3.3:看门狗 timer 句柄修复(0.3.2 的 stop_timer(0) 异常);生成慢响应 >70s 自动复位可重试;AI 环境状态文案清理。",
   "age_rating": "all",
   "license": "Apache-2.0"
 }
