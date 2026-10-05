@@ -6,16 +6,16 @@
      GitHub README <video> 标签被 strip → 动画 GIF 作内嵌预览;
      点击 GIF 跳转 B 站播放页(带音频/弹幕/高清);GitHub blob 页与 raw 下载作备选 -->
 <p align="center">
-  <a href="https://www.bilibili.com/video/BV1MZHW6MEWZ/">
+  <a href="https://www.bilibili.com/video/BV1MZHW6MEWZ/" target="_blank">
     <img src="assets/promo-v10-preview.gif" alt="▶️ 点击观看视频介绍(哔哩哔哩)" width="960">
   </a>
 </p>
 
 <p align="center">
-  <sub>▶️ <a href="https://www.bilibili.com/video/BV1MZHW6MEWZ/">哔哩哔哩观看【OctoStudio 功能介绍】</a>
-  · <a href="https://github.com/aios-pub/OctoStudio/blob/main/assets/promo-v10.mp4">GitHub 播放 1080p</a>
+  <sub>▶️ <a href="https://www.bilibili.com/video/BV1MZHW6MEWZ/" target="_blank">哔哩哔哩观看【OctoStudio 功能介绍】</a>
+  · <a href="https://github.com/aios-pub/OctoStudio/blob/main/assets/promo-v10.mp4" target="_blank">GitHub 播放 1080p</a>
   · ⬇️ <a href="https://github.com/aios-pub/OctoStudio/raw/main/assets/promo-v10.mp4">下载 MP4 (14.9 MB)</a>
-  · 18 景精确 60.000s @ 30fps · 源工程 <a href="promo/">promo/</a> (fframes · Skia · Metal)</sub>
+  · 18 景精确 60.000s @ 30fps</sub>
 </p>
 
 一句话,就是一篇文。
