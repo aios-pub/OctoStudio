@@ -3,17 +3,19 @@
 > **言出法随 · 意图即应用 — 一句话,就是一篇文**
 
 <!-- 视频介绍(60s @ 30fps,18 景精确 60s · v0.4.3 全品类:10 主题 / 5 视频预设 / M3 内容管理 / AI 助手 7 项 / 3 宿主真实运行)
-     GitHub README <video> 标签被 strip,user-attachments API 返 Bad Size
-     → 改用:动画 GIF 内嵌预览(<img>)+ 点击链接播放完整 MP4 -->
+     GitHub README <video> 标签被 strip → 动画 GIF 作内嵌预览;
+     点击 GIF 跳转 blob 页(GitHub 对仓库内视频文件自带播放器);
+     raw 链接 Content-Type 是 octet-stream,直接给用户会触发下载,只作"下载"用途 -->
 <p align="center">
-  <a href="https://github.com/aios-pub/OctoStudio/raw/main/assets/promo-v10.mp4">
+  <a href="https://github.com/aios-pub/OctoStudio/blob/main/assets/promo-v10.mp4">
     <img src="assets/promo-v10-preview.gif" alt="▶️ 点击播放 60s promo (v0.4.3 全品类)" width="960">
   </a>
 </p>
 
 <p align="center">
-  <sub>📹 <a href="https://github.com/aios-pub/OctoStudio/raw/main/assets/promo-v10.mp4">下载完整 1080p MP4 (14.9 MB)</a>
-  · <a href="https://github.com/aios-pub/OctoStudio/raw/main/assets/promo-v10-preview.webm">720p WebM (3.3 MB)</a>
+  <sub>▶️ <a href="https://github.com/aios-pub/OctoStudio/blob/main/assets/promo-v10.mp4">在 GitHub 播放 60s promo (1080p)</a>
+  · ⬇️ <a href="https://github.com/aios-pub/OctoStudio/raw/main/assets/promo-v10.mp4">下载 MP4 (14.9 MB)</a>
+  · <a href="https://github.com/aios-pub/OctoStudio/blob/main/assets/promo-v10-preview.webm">720p WebM (3.3 MB)</a>
   · 18 景精确 60.000s @ 30fps · 源工程 <a href="promo/">promo/</a> (fframes · Skia · Metal)</sub>
 </p>
 
