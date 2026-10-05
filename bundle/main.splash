@@ -1,7 +1,8 @@
-// OctoStudio — 一句话,就是一次创作 (v0.3.0)
+// OctoStudio — 一句话,就是一次创作 (v0.3.5)
 // 场景广场:原文二创 / 图文 / 视频分镜 / PPT / 拆解视频 / 标题 / 小红书 / 口播 / 导图 / 金句
 // 通用计划编辑器(增删改排) · 文章主题样式 10 款 · 视频风格预设 · AI 合成建议
 // 多格式导出:Markdown / 公众号 / Notion / Marp / SRT 字幕 / 视频制作包 / markmap
+// M3 内容管理:广场搜索 / 标签筛选 / AI 历史(每篇最近 3 条)
 // 生图增强(可选):images capability 下加载免鉴权公网生图服务,失败自动降级为 prompt 文本。
 // 降级:card-host / App Hub 不提供 octos / model 时,填入演示内容,仍可手动编辑并保存。
 
@@ -32,6 +33,11 @@ let status_text = "就绪"
 let studio_inited = false
 let model_available = false
 let octos_available = false
+let search_query = ""
+let active_tag = ""
+let known_tags = []
+let history_open_id = ""
+let first_run_seeded = false
 
 let ink = #x1c1c1e
 let secondary = #x8e8e93
@@ -485,6 +491,8 @@ fn load_works(){
                 if fixed["plan_items"] == nil { fixed += {plan_items: []} }
                 if fixed["theme"] == nil { fixed += {theme: ""} }
                 if fixed["composition"] == nil { fixed += {composition: nil} }
+                if fixed["tags"] == nil { fixed += {tags: []} }
+                if fixed["history"] == nil { fixed += {history: []} }
                 if fixed["id"] == nil { fixed += {id: "w-legacy-" + bump_seq().to_string()} }
                 if fixed["id"] == "" { fixed += {id: "w-legacy-" + bump_seq().to_string()} }
                 normalized.push(fixed)
@@ -497,6 +505,155 @@ fn load_works(){
 
 fn save_works(){
     fs.write("works.json", works.to_json())
+}
+
+// ---------- 标签聚合 / 搜索 / AI 历史 ----------
+
+fn rebuild_known_tags(){
+    let all = []
+    for w in works {
+        let ts = w["tags"]
+        if ts != nil {
+            for t in ts {
+                let v = sval(t)
+                if v != "" {
+                    let seen = false
+                    for x in all {
+                        if x == v { seen = true }
+                    }
+                    if !seen { all.push(v) }
+                }
+            }
+        }
+    }
+    known_tags = all
+}
+
+fn set_search(q){
+    search_query = q
+    ui.works_list.render()
+}
+
+fn toggle_tag(t){
+    if active_tag == t { active_tag = "" } else { active_tag = t }
+    ui.tag_row.render()
+    ui.works_list.render()
+}
+
+fn toggle_history(id){
+    if history_open_id == id { history_open_id = "" } else { history_open_id = id }
+    ui.works_list.render()
+}
+
+fn filtered_works(){
+    let q = search_query
+    let t = active_tag
+    let out = []
+    for w in works {
+        if t != "" {
+            let ts = w["tags"]
+            let has_tag = false
+            if ts != nil {
+                for tag in ts {
+                    if tag == t { has_tag = true }
+                }
+            }
+            if !has_tag { continue }
+        }
+        if q != "" {
+            let title_v = (if w["title"] != nil {w["title"]} else {""})
+            let source_v = (if w["source"] != nil {w["source"]} else {""})
+            let hit = (title_v.search(q) >= 0)
+            if !hit { hit = (source_v.search(q) >= 0) }
+            if !hit { continue }
+        }
+        out.push(w)
+    }
+    return out
+}
+
+fn add_history_entry(prompt, result){
+    if current_id == "" { return }
+    let h = []
+    for w in works {
+        if w["id"] == current_id {
+            let ex = w["history"]
+            if ex != nil { h = ex }
+        }
+    }
+    h.push({prompt: prompt result: sval(result) time: bump_seq()})
+    let n = h.len()
+    if n > 3 {
+        let trimmed = []
+        for i in n {
+            if i >= n - 3 { trimmed.push(h[i]) }
+        }
+        h = trimmed
+    }
+    let kept = []
+    let replaced = false
+    for w in works {
+        if w["id"] == current_id {
+            let u = w
+            u["history"] = h
+            kept.push(u)
+            replaced = true
+        } else {
+            kept.push(w)
+        }
+    }
+    if replaced { works = kept; save_works() }
+}
+
+fn history_summary(items){
+    let n = items.len()
+    if n == 0 { return "尚无 AI 历史" }
+    if n == 1 { return "AI 历史 · 1 条" }
+    return "AI 历史 · " + n.to_string() + " 条(最多保留 3 条)"
+}
+
+fn add_tag_to_current(tag){
+    if current_id == "" { return }
+    if tag == "" { return }
+    let kept = []
+    let replaced = false
+    for w in works {
+        if w["id"] == current_id {
+            let u = w
+            let ts = u["tags"]
+            if ts == nil { ts = [] }
+            let seen = false
+            for x in ts {
+                if x == tag { seen = true }
+            }
+            if !seen { ts.push(tag) }
+            u["tags"] = ts
+            kept.push(u)
+            replaced = true
+        } else {
+            kept.push(w)
+        }
+    }
+    if replaced { works = kept; save_works(); rebuild_known_tags() }
+}
+
+fn history_lines(items){
+    let out = ""
+    let n = items.len()
+    let start = 0
+    if n > 3 { start = n - 3 }
+    let idx = 1
+    for i in 18 {
+        if i + start < n {
+            let it = items[i + start]
+            let p = sval(it["prompt"])
+            let r = sval(it["result"])
+            if r.len() > 80 { r = r.substr(0, 80) + "…" }
+            out = out + idx.to_string() + ") " + p + " → " + r + "\n"
+            idx = idx + 1
+        }
+    }
+    return out
 }
 
 fn start_scenario(id){
@@ -581,20 +738,32 @@ fn delete_work(id){
     }
     works = kept
     save_works()
+    rebuild_known_tags()
+    ui.tag_row.render()
     status_text = "已删除 · " + now_label()
     ui.status.set_text(status_text)
-    ui.works_inner.render()
+    ui.works_list.render()
 }
 
 fn upsert_and_save(){
     let stamp = bump_seq()
     let kept = []
     let found = false
+    let existing_tags = []
+    let existing_history = []
+    for w in works {
+        if w["id"] == current_id {
+            let ex_t = w["tags"]
+            if ex_t != nil { existing_tags = ex_t }
+            let ex_h = w["history"]
+            if ex_h != nil { existing_history = ex_h }
+        }
+    }
     let legacy_sections = []
     if plan_kind == "image" { legacy_sections = current_plan_items }
     let legacy_scenes = []
     if plan_kind == "video" { legacy_scenes = current_plan_items }
-    let entry = {id: current_id title: current_title source: current_source reference: current_reference content: current_content style: current_style prompt: current_prompt plan_kind: plan_kind plan_title: current_plan_title plan_summary: current_plan_summary plan_items: current_plan_items plan_sections: legacy_sections plan_scenes: legacy_scenes theme: current_theme composition: current_composition updated: stamp}
+    let entry = {id: current_id title: current_title source: current_source reference: current_reference content: current_content style: current_style prompt: current_prompt plan_kind: plan_kind plan_title: current_plan_title plan_summary: current_plan_summary plan_items: current_plan_items plan_sections: legacy_sections plan_scenes: legacy_scenes theme: current_theme composition: current_composition tags: existing_tags history: existing_history updated: stamp}
     for w in works {
         if w["id"] == current_id {
             kept.push(entry)
@@ -604,9 +773,11 @@ fn upsert_and_save(){
     if !found { kept.push(entry) }
     works = kept
     save_works()
+    rebuild_known_tags()
+    ui.tag_row.render()
     status_text = "已保存 · " + now_label()
     ui.status.set_text(status_text)
-    ui.works_inner.render()
+    ui.works_list.render()
 }
 
 // ---------- 原文二创(octos) ----------
@@ -650,6 +821,8 @@ fn ask_ai(){
                 current_content = r.data["text"]
                 ui.content_input.set_text(current_content)
                 ui.content_input.render()
+                add_history_entry(current_style, current_content)
+                add_tag_to_current(current_style)
                 status_text = "已创作 · " + now_label()
             } else {
                 status_text = "助手不可用: " + r.error
@@ -1152,6 +1325,11 @@ fn ask_scenario(){
         if good { } else { load_demo_plan() }
         if good {
             status_text = kind_done_note(plan_kind)
+            let summary = sval(current_plan_title)
+            if summary == "" { summary = kind_name(plan_kind) }
+            summary = summary + " · " + current_plan_items.len().to_string() + " 条"
+            add_history_entry(current_prompt, summary)
+            add_tag_to_current(kind_name(plan_kind))
         } else {
             status_text = "model 不可用(" + (if r.error != nil {r.error} else {"无返回"}) + "),已填入演示内容"
         }
@@ -1721,7 +1899,7 @@ fn goto(m){
     ui.plan_view.set_visible(mode == 3)
     ui.export_view.set_visible(mode == 4)
     ui.tabs.render()
-    ui.works_inner.render()
+    ui.works_list.render()
     if m == 1 { refresh_compose() }
     if m == 2 {
         ui.source_preview.set_text(current_source)
@@ -1765,6 +1943,7 @@ fn env_kind(){
 // user can verify at the OctoSense shell for the real experience.
 fn boot(){
     load_works()
+    rebuild_known_tags()
     let model_decl = host.has("model")
     let octos_decl = host.has("octos.turn.start")
     // Trust the declaration, but always expose the real runtime so the
@@ -1787,7 +1966,8 @@ fn boot(){
     }
     ui.status.set_text(status_text)
     ui.status_detail.set_text(status_detail)
-    ui.works_inner.render()
+    ui.tag_row.render()
+    ui.works_list.render()
     goto(0)
 }
 
@@ -1806,8 +1986,8 @@ root := SolidView{width: Fill height: Fill flow: Down padding: 16 spacing: 10 dr
     View{width: Fill height: Fit flow: Right spacing: 8 align: Align{y: 0.5}
         Label{text: "OctoStudio" draw_text.color: ink draw_text.text_style: theme.font_bold{font_size: 26}}
         status := Label{width: Fill text: status_text draw_text.color: secondary draw_text.text_style.font_size: 10}
-        status_detail := Label{width: Fill text: status_detail draw_text.color: secondary draw_text.text_style.font_size: 9}
     }
+    status_detail := Label{width: Fill text: status_detail draw_text.color: secondary draw_text.text_style.font_size: 9}
     tabs := View{width: Fill height: Fit flow: Right spacing: 6 on_render: || {
         let labels = ["广场" "录入" "工坊" "计划" "导出"]
         for i in 5 {
@@ -1821,7 +2001,7 @@ root := SolidView{width: Fill height: Fill flow: Down padding: 16 spacing: 10 dr
 
     content := View{width: Fill height: Fill flow: Overlay
 
-        home_view := View{width: Fill height: Fill flow: Down spacing: 10 visible: (mode == 0)
+        home_view := ScrollYView{width: Fill height: Fill flow: Down spacing: 10 visible: (mode == 0)
             Label{width: Fill text: "创作广场" draw_text.color: ink draw_text.text_style: theme.font_bold{font_size: 20}}
             View{width: Fill height: Fit flow: Right spacing: 6
                 for i in 5 {
@@ -1849,24 +2029,36 @@ root := SolidView{width: Fill height: Fill flow: Down padding: 16 spacing: 10 dr
                 }
             }
             Label{width: Fill text: "本地创作工作台 · 一句话生成图文/分镜/PPT/口播等,导出至公众号 / Markdown / Notion / Marp。长按卡片删除。" draw_text.color: secondary draw_text.text_style.font_size: 11}
-            works_list := ScrollYView{width: Fill height: Fill flow: Down spacing: 10
-                works_inner := View{width: Fill height: Fit flow: Down spacing: 10 on_render: || {
-                if works.len() == 0 {
+            View{width: Fill height: Fit flow: Right spacing: 6 align: Align{y: 0.5}
+                search_input := TextInput{width: Fill height: 32 empty_text: "搜索作品标题 / 原文关键词…"
+                    draw_bg +: {color: #xffffff color_hover: #xffffff color_focus: #xffffff color_empty: #xf5e6d2 border_radius: 8.0}
+                    draw_text +: {color: ink color_hover: ink color_focus: ink color_empty: secondary color_empty_hover: secondary}
+                    on_change: |t| set_search(t)}
+                ButtonFlat{text: "清除" height: 30 padding: Inset{left: 10 right: 10} on_click: || { set_search(""); ui.search_input.set_text("") }
+                    draw_bg +: {color: chip_bg color_hover: warm_hover border_radius: 15.0 border_size: 0.0}
+                    draw_text +: {color: ink color_hover: ink}
+                    draw_text.text_style.font_size: 10}
+            }
+            works_list := View{width: Fill height: Fit flow: Down spacing: 10 on_render: || {
+                let visible = filtered_works()
+                if visible.len() == 0 {
                     View{width: Fill height: 140 align: Align{x: 0.5 y: 0.5}
-                        Label{text: "还没有作品" draw_text.color: ink draw_text.text_style.font_size: 15}
-                        Label{text: "点上面的场景卡片开始一段创作。" draw_text.color: secondary draw_text.text_style.font_size: 12}
+                        Label{text: (if works.len() == 0 {"还没有作品"} else {"没有匹配的作品"}) draw_text.color: ink draw_text.text_style.font_size: 15}
+                        Label{text: (if works.len() == 0 {"点上面的场景卡片开始一段创作。"} else {"清除搜索 / 标签筛选看全部。"}) draw_text.color: secondary draw_text.text_style.font_size: 12}
                     }
                 }
                 for i in 24 {
-                    if i < works.len() {
-                    let w = works[i]
+                    if i < visible.len() {
+                    let w = visible[i]
                     let title_v = (if w["title"] != nil {w["title"]} else {"未命名作品"})
                     let kind_v = (if w["plan_kind"] != nil {w["plan_kind"]} else {""})
                     let style_v = (if w["style"] != nil {w["style"]} else {"改写"})
                     let stamp_v = (if w["updated"] != nil {w["updated"]} else {0})
                     let sub = style_v
                     if kind_v != "" { sub = kind_name(kind_v) }
-                    GestureView{width: Fill height: Fit flow: Down spacing: 2 padding: Inset{top: 12 bottom: 12 left: 14 right: 14}
+                    let tags_arr = (if w["tags"] != nil {w["tags"]} else {[]})
+                    let hist_arr = (if w["history"] != nil {w["history"]} else {[]})
+                    GestureView{width: Fill height: Fit flow: Down spacing: 4 padding: Inset{top: 12 bottom: 12 left: 14 right: 14}
                         draw_bg +: {color: #xffffff color_hover: card_bg border_radius: 10.0 border_size: 0.0}
                         on_tap: |x, y| open_work(w["id"])
                         on_long_press: |x, y| delete_work(w["id"])
@@ -1875,11 +2067,57 @@ root := SolidView{width: Fill height: Fill flow: Down padding: 16 spacing: 10 dr
                             Label{text: kind_emoji(kind_v) draw_text.color: secondary draw_text.text_style.font_size: 14}
                         }
                         Label{width: Fill text: (sub + " · 更新于 " + rel_time(stamp_v)) draw_text.color: secondary draw_text.text_style.font_size: 11}
+                        if tags_arr.len() > 0 {
+                            View{width: Fill height: Fit flow: Right spacing: 4
+                                for ti in 6 {
+                                    if ti < tags_arr.len() {
+                                        let tg = sval(tags_arr[ti])
+                                        Label{text: ("#" + tg) draw_text.color: accent draw_text.text_style.font_size: 10}
+                                    }
+                                }
+                            }
+                        }
+                        if hist_arr.len() > 0 {
+                            View{width: Fill height: Fit flow: Right spacing: 6 align: Align{y: 0.5}
+                                ButtonFlat{text: (if (history_open_id == w["id"]) {"收起历史"} else {history_summary(hist_arr)}) height: 24 padding: Inset{left: 8 right: 8}
+                                    on_click: || toggle_history(w["id"])
+                                    draw_bg +: {color: chip_bg color_hover: warm_hover border_radius: 12.0 border_size: 0.0}
+                                    draw_text +: {color: ink color_hover: ink}
+                                    draw_text.text_style.font_size: 9}
+                            }
+                            if history_open_id == w["id"] {
+                                View{width: Fill height: Fit flow: Down spacing: 2 padding: Inset{left: 6 right: 6 top: 4 bottom: 4}
+                                    draw_bg +: {color: #xfafafa color_hover: #xfafafa border_radius: 6.0 border_size: 0.0}
+                                    Label{width: Fill text: history_lines(hist_arr) draw_text.color: ink draw_text.text_style.font_size: 10}
+                                }
+                            }
+                        }
                     }
                     }
                 }
-                }}
-            }
+            }}
+            tag_row := View{width: Fill height: Fit flow: Right spacing: 4 on_render: || {
+                let label = "#全部"
+                ButtonFlat{text: label height: 24 padding: Inset{left: 8 right: 8}
+                    on_click: || toggle_tag("")
+                    draw_bg +: {color: (if active_tag == "" {accent} else {chip_bg}) color_hover: (if active_tag == "" {#xff8866} else {warm_hover}) border_radius: 12.0 border_size: 0.0}
+                    draw_text +: {color: (if active_tag == "" {#xffffff} else {secondary}) color_hover: (if active_tag == "" {#xffffff} else {ink})}
+                    draw_text.text_style.font_size: 9}
+                if known_tags.len() == 0 {
+                    Label{text: "(尚无标签,完成作品后自动出现)" draw_text.color: secondary draw_text.text_style.font_size: 9}
+                }
+                for k in 16 {
+                    if k < known_tags.len() {
+                        let tg = known_tags[k]
+                        let lbl = "#" + tg
+                        ButtonFlat{text: lbl height: 24 padding: Inset{left: 8 right: 8}
+                            on_click: || toggle_tag(tg)
+                            draw_bg +: {color: (if active_tag == tg {accent} else {chip_bg}) color_hover: (if active_tag == tg {#xff8866} else {warm_hover}) border_radius: 12.0 border_size: 0.0}
+                            draw_text +: {color: (if active_tag == tg {#xffffff} else {secondary}) color_hover: (if active_tag == tg {#xffffff} else {ink})}
+                            draw_text.text_style.font_size: 9}
+                    }
+                }
+            }}
         }
 
         compose_view := View{width: Fill height: Fill flow: Down spacing: 10 visible: (mode == 1)

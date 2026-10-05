@@ -38,7 +38,7 @@
     "support": "mailto:amos@aios.pub",
     "privacy_policy_url": "https://aios.pub/privacy"
   },
-  "release_notes": "v0.3.3:修 card-host 下状态栏误标 AI 已就绪(cardhost 实际不连 octos/model);状态栏显式标注当前宿主与 AI 真实状态,详情指向 INTEGRATION.md;README/INTEGRATION 加三宿主能力矩阵(OctoSense 桌面壳 ✅ / Rinx 小程序 ⚠️ / card-host ❌)。",
+  "release_notes": "v0.3.5:M3 内容管理落地——广场搜索框(实时过滤标题/原文)、标签筛选 chips(自动从作品聚合,生成时按场景/风格自动打标签)、AI 历史(每篇作品最近 3 条 prompt/result,卡片可展开查看);状态栏副标题搬独立行,广场可滚;真实 AI 在 OctoSense 桌面壳与 Rinx 验证,card-host 仍降级。",
   "age_rating": "all",
   "license": "Apache-2.0"
 }

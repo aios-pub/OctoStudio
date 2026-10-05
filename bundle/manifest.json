@@ -14,10 +14,10 @@
   },
   "id": "octostudio",
   "integrity": {
-    "bundle_blake3": "24eae2e543a2be12cc0e1ca0b7e4f2aeba133babd44c1fcf4d6dd39fee180ff4",
+    "bundle_blake3": "41824bba61718853c46055cd78cdad9de5d7290f142ff66ea7e4bc66e0073512",
     "signature": {
-      "key_id": "amosgeek",
-      "value": "0023d79c1fd0277c9e65b59df5eb0509792c0d7a2258ee6fcfb6c8347a6596b76842e3f4684389c8f48bcaae0f7580bc483f3225279badacd5f257b713fbf50b"
+      "key_id": "aios.pub",
+      "value": "fb62201b44f3175f05942fb35b29bd4882d95d1b25f2def51a5fc299715d134068aac1fb38d72d9fd680914e214366d8f5c21d31bafdf373a8bfacbeee19d20c"
     }
   },
   "name": "OctoStudio",
@@ -28,5 +28,5 @@
   "storage": {
     "max_bytes": null
   },
-  "version": "0.3.3"
+  "version": "0.3.5"
 }
