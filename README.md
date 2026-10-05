@@ -599,9 +599,89 @@ hub check /Volumes/PSSD/CodeProjects/octostudio/bundle \
 git tag octostudio-0.2.0 && git push origin octostudio-0.2.0
 
 # 6. 在 OctoSense-App-Hub 开 issue
-#    标题:Submit octostudio 0.2.0
+#    标题:Submit octostudio 0.X.Y
 #    附:tag、commit、bundle 路径、publisher 公钥、check 输出、REVIEW-ANSWERS.md
 ```
+
+### v0.3.3 提交流程(publisher `aios.pub`,2026-10-05 实测通过)
+
+完整记录在 `build/ISSUE-SUBMIT-0.3.3.md`,顺序是:**bundle 修改 → stamp → sign → 重发本地 mirror → commit & tag → push → 更新 issue**。任何一步之后改了 bundle 都要回到第一步重做。
+
+```sh
+APP=/Volumes/PSSD/CodeProjects/octostudio
+HUB=/Volumes/PSSD/dev/rust-target/release/hub
+KEYS=$APP/build/keys
+M=$APP/build/mirror
+KEY=~/.octosense/aios.pub-publisher.key            # publisher 私钥
+PUBKEY=$($HUB pubkey $KEY)                          # 当前值 c02572b30ef0c38a…
+
+# 1. stamp(把 bundle_blake3 写入 manifest)
+$HUB stamp bundle
+
+# 2. sign(用 aios.pub 密钥签 manifest)
+$HUB sign-manifest bundle --key $KEY --key-id aios.pub
+
+# 3. 签名自检(通过表示 signature value 与 manifest 字节一致)
+$HUB check bundle --publisher-key "aios.pub=$PUBKEY"
+# 期望: octostudio 0.3.3 — PASSED
+
+# 4. 重发本地 mirror(写入 build/mirror/catalog.json + anchor.hex)
+ANCHOR=$($HUB pubkey $KEYS/anchor.key)
+CERT=$($HUB certify --anchor $KEYS/anchor.key --working $KEYS/working.key)
+$HUB publish bundle --catalog $M/catalog.json \
+  --key $KEYS/working.key --anchor-cert "$CERT" \
+  --publisher aios.pub \
+  --publisher-key "aios.pub=$PUBKEY" \
+  --repo https://github.com/aios-pub/OctoStudio.git \
+  --commit "$(git -C $APP rev-parse HEAD)" --out $M
+$HUB verify $M/catalog.json --anchor "$ANCHOR"
+echo $ANCHOR > $APP/build/anchor.hex
+
+# 5. commit 本地变更(分支名带 publisher,清晰)
+git checkout -b v0.3.3-aios.pub
+git add bundle/ README.md INTEGRATION.md REVIEW-ANSWERS.md ROADMAP.md
+git commit -m "v0.3.3-aios.pub: ..."
+git tag octostudio-0.3.3                              # lightweight tag
+
+# 6. push 到 aios-pub/OctoStudio
+# 6a. 正常网络:
+git push origin v0.3.3-aios.pub --follow-tags
+# 6b. 443 超时(macOS Clash 网关常见):走 gh api,见下面"GitHub 推送变通"
+```
+
+> ⚠️ **签名严格不可逆** —— manifest 改了就要重签;本地 catalog 用了就不要再重签旧 digest。
+
+### GitHub 推送变通(`git push` 443 超时时)
+
+`gh api` 直连 GitHub 是不走 git 协议的,不受 443 timeout 影响。完整脚本见 `~/.zcode/cli/memories/projects/octostudio-69a6319f7f84b652/memory/github-push-via-gh-api.md`,核心步骤:
+
+```python
+# 1) POST /git/blobs(逐文件 base64)
+# 2) POST /git/trees(递归建子树)
+# 3) POST /git/commits(parent = 远端 main 当前 SHA,tree = 新 root)
+# 4) POST /git/refs(branch + lightweight tag)
+```
+
+GitHub 侧重建的 commit SHA 与本地不同(时间戳格式差异),但 **tree SHA 完全一致**(因为 blobs + tree 是逐字段构造的)。验证:
+```
+gh api repos/aios-pub/OctoStudio/branches/v0.3.3-aios.pub
+gh api repos/aios-pub/OctoStudio/tags
+```
+
+### 当前 v0.3.3 远端状态(已推送)
+
+| 项 | 值 |
+|---|---|
+| Issue | [#73 — Submit octostudio 0.3.3 (publisher: aios.pub)](https://github.com/OctoSense-org/OctoSense-App-Hub/issues/73) |
+| Tag | [`octostudio-0.3.3`](https://github.com/aios-pub/OctoStudio/tree/octostudio-0.3.3) → `0e63cf1fb25c` |
+| Branch | [`v0.3.3-aios.pub`](https://github.com/aios-pub/OctoStudio/tree/v0.3.3-aios.pub) |
+| Local commit | `f76afe0`(本地) — 同 tree (`ce4a1fab267d`)、作者、时间戳 |
+| Bundle digest | `0d81c8a5409f8d9fe58d66fc27574232ab4af914093d703d7342b9279bea14e2` |
+| Publisher pubkey | `c02572b30ef0c38a56de97b909fe6fbb419212ea3d8723d0b0342b7737394c02` |
+| hub check | `octostudio 0.3.3 — PASSED`(`hub check bundle --publisher-key aios.pub=…`) |
+| Local mirror | `catalog sequence 1 verified, 1 entries`(`build/mirror/anchor.hex = 96f4f77f…`) |
+
+Reviewer 在 hub 完成注册后,可走 route **human-review**(与 v0.1.0 / v0.3.0 一致)。`REVIEW-ANSWERS.md` 已随 commit 推送。
 
 签名之后任何修改都要重新 stamp + 签名。
 
@@ -627,6 +707,7 @@ git tag octostudio-0.2.0 && git push origin octostudio-0.2.0
 
 ## 相关链接
 
+- [App Hub issue #73 — Submit octostudio 0.3.3 (publisher: aios.pub)](https://github.com/OctoSense-org/OctoSense-App-Hub/issues/73) — 当前提交工单(已含 tag、commit、bundle 信息、publisher 公钥)
 - [`OctoScript-App-Design-Flow`](https://github.com/OctoSense-org/OctoScript-App-Design-Flow) — 工具链与文档
 - [`OctoSense-App-Hub`](https://github.com/OctoSense-org/OctoSense-App-Hub) — `hub` / `card-host` / 商店
 - [`docs/SCRIPT-API.md`](https://github.com/OctoSense-org/OctoScript-App-Design-Flow/blob/main/docs/SCRIPT-API.md) — Splash 语言 + 全部 API
