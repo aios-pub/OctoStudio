@@ -1801,6 +1801,8 @@ fn ai_budget(){
     })
 }
 
+// ---------- 能力探查已移除(v0.4.1):探查结果见 README §"AI 能力真实测试报告" ----------
+
 fn ask_scenario(){
     if busy { return }
     if plan_kind == "teardown" {

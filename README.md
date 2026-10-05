@@ -8,7 +8,7 @@
 
 OctoStudio 让创作者的意图直接成为产物 — **言出法随,意图即应用**。跑在 [OctoSense](https://github.com/OctoSense-org) 设备上的脚本应用,整个 `bundle/` 就是一个 `main.splash` 文件,在隔离沙箱里被 Splash VM 解释执行。面向中文内容创作者(公众号作者 / Markdown 写作者 / 视频脚本写手):用一句话或一段原文,生成可发布到多个平台的内容,作品全部存在你设备本地,AI 用的是你设备上的模型而非云端 API。
 
-`v0.4.0` · 2700+ 行 Splash · 5 屏 · 15 张真实截图 · Apache-2.0
+`v0.4.1` · 2700+ 行 Splash · 5 屏 · 15 张真实截图 · Apache-2.0
 
 ---
 
@@ -87,6 +87,52 @@ OctoStudio 的所有 9 场景(原文二创 / 图文 / 视频分镜 / PPT / 拆�
 | 19 | **AI 助手 7 项** *(v0.4.0)* — 工坊屏 model 助手面板 — 自动起标题/关键词/摘要/风格迁移(4 风格)/中英对照/标题打分/模型预算;`class: "fast"` 节省配额 | `model` | 规划中 |
 | 20 | **glance 卡片** *(v0.4.0)* — 启动时声明 `glance` capability;提供 `glance.publish` / `glance.withdraw` 助手,降级时按钮置灰 | `glance` | 规划中 |
 | 21 | **宣传片 / 宣传图** *(规划中)* — 初赛路演与商店展示物料(片源工程在 `promo/` 迭代中) | 工具链 | 规划中 |
+
+## AI 能力真实测试报告(v0.4.0)
+
+> 测试日期:**2026-10-05**。测试方式:在 `bundle/main.splash` 加入临时 `probe_all()` 函数,在 card-host 下点击「运行 AI 能力探查」按钮一次性发出 14 个 `host.request` 调用,把每个返回的 `is_ok` / `error` 拼成多行日志显示在屏。
+> 截图:`![probe](bundle/screenshots/21-probe-results-cardhost.png)`
+
+### 能力矩阵与现状
+
+| 能力 | 期望 | card-host 实测 | 平台文档(2026-10-01)状态 | 已提 issue |
+|---|---|---|---|---|
+| `model.complete` | 文本生成,schema 严格 | ❌ `no service answers "model" on this device` | **可用**(Shell 中) | — |
+| `model.budget` | 配额查询 | ❌ `no service answers "model" on this device` | **可用**(Shell 中) | — |
+| `octos.session.open` | 开启会话 | ❌ `no service answers "octos" on this device` | **可用**(用户允许后 Shell 中) | — |
+| `octos.turn.start` | 助手对话 | ❌ `no service answers "octos" on this device` | **可用** | — |
+| `octos.session.history` | 历史 | ❌ `this app was not granted "octos", which "octos.session.history" needs` | **可用**(manifest 未声明) | — |
+| `glance.publish` | 发布到 glance 屏 | ❌ `no service answers "glance" on this device` | **可用**(Shell 中) | — |
+| `glance.list` | 列出 glance | ❌ `no service answers "glance" on this device` | **可用** | — |
+| `glance.withdraw` | 撤回 glance | ❌ `no service answers "glance" on this device` | **可用** | — |
+| `sys.digest` | L0 数据源 | ❌ `this app was not granted "sys", which "sys.digest" needs` | **可用**(新 runtime 中) | — |
+| **`model.image`** | **文生图** | ❌ `no service answers "model" on this device` | **❌ 未发布** — 文档从未列名 | ✅ [OctoSense-App-Hub#85](https://github.com/OctoSense-org/OctoSense-App-Hub/issues/85) |
+| **`model.video`** | **文生视频** | ❌ `no service answers "model" on this device` | **❌ 未发布** | ✅ [OctoSense-App-Hub#86](https://github.com/OctoSense-org/OctoSense-App-Hub/issues/86) |
+| **`model.audio`** | **文字转语音** | ❌ `no service answers "model" on this device` | **❌ 未发布** | ✅ [OctoSense-App-Hub#87](https://github.com/OctoSense-org/OctoSense-App-Hub/issues/87) |
+| **`model.embeddings`** | **嵌入** | ❌ `no service answers "model" on this device` | **❌ 未发布** | ✅ [OctoSense-App-Hub#88](https://github.com/OctoSense-org/OctoSense-App-Hub/issues/88) |
+| **`octos.image`** | **文生图** | ❌ `this app was not granted "octos", which "octos.image" needs` | **❌ 未发布** | ✅ [OctoSense#332](https://github.com/OctoSense-org/OctoSense/issues/332) |
+| **`octos.video`** | **文生视频** | ❌ `this app was not granted "octos", which "octos.video" needs` | **❌ 未发布** | ✅ [OctoSense#332](https://github.com/OctoSense-org/OctoSense/issues/332) |
+
+### 真实宿主复测状态
+
+本机编译产物 `OctoSense/target/release/octosense-reference` 仅含参考壳,非完整 Shell(完整 Shell 需要完整 cargo 编译整套 `app-peers + ai-providers + app-host` 等 workspace 仓,首次约 30 分钟+)。因此 **Shell 下的真实复测本轮未跑**(框架问题),需要用户在本机编译完整 Shell 后再做一轮。card-host 探查结果是可信的:card-host 设计上明确不连任何宿主服务,详见 [OctoScript-App-Design-Flow/docs/AI-SERVICES.zh-CN.md](https://github.com/OctoSense-org/OctoScript-App-Design-Flow/blob/main/docs/AI-SERVICES.zh-CN.md)。
+
+### 框架级缺口(已上报)
+
+下列能力在 OctoSense `main` (2026-10-01) 与 App Hub `main` 尚未发布,文档也未列出。本轮已在对应仓库提 issue,详见「已提 issue」列:
+
+- **文生图(`model.image` / `octos.image`)** — 商店应用唯一的"图像"产出途径仍是 `images` capability 加载外部 URL(配图降级为文本),详见 ROADMAP M7 等平台。OctoSense-App-Hub issue 提请:`Add model.image and octos.image host services for image generation`.
+- **文生视频(`model.video` / `octos.video`)** — 当前零路径;视频 widget 同样未发布。OctoSense-App-Hub issue 提请:`Add model.video / octos.video host services for text-to-video`.
+- **TTS(`model.audio`)** — 文字转语音无服务。OctoSense-App-Hub issue 提请:`Add model.audio for TTS host service`.
+- **嵌入(`model.embeddings`)** — 无服务。OctoSense-App-Hub issue 提请:`Add model.embeddings for vector embedding host service`.
+- **`sys.digest`** — 准入检查需要 `sys` 能力。当前 manifest 尚未声明(SPEC 已加入 ROADMAP M7 等平台定项,OctoSense PR 待合)。
+
+### 关于 v0.4.0 的降级声明
+
+- card-host **不连接** octos/model/glance — 这是设计如此,不是 bug。
+- 商店应用进入真实 OctoSense Shell 后,用户首次使用会看到「Waiting for the person to allow this app's agent」对话框;一旦允许,`octos.*` 全部可用。
+- 模型提供方由用户在 AI providers 系统应用里配置;应用包内**绝不可**放任何 token 或私钥(已经过 `hub check` 验证)。
+- 当前 v0.4.0 的所有 AI 功能在「未连接」状态下都给出可读错误并保留手动编辑保存路径。
 
 未来规划(见 [`ROADMAP.md`](ROADMAP.md)):个人风格工坊、主题网络抓取、拟人化文章生成、glance 卡片分发。
 
