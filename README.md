@@ -8,7 +8,7 @@
 
 OctoStudio 让创作者的意图直接成为产物 — **言出法随,意图即应用**。跑在 [OctoSense](https://github.com/OctoSense-org) 设备上的脚本应用,整个 `bundle/` 就是一个 `main.splash` 文件,在隔离沙箱里被 Splash VM 解释执行。面向中文内容创作者(公众号作者 / Markdown 写作者 / 视频脚本写手):用一句话或一段原文,生成可发布到多个平台的内容,作品全部存在你设备本地,AI 用的是你设备上的模型而非云端 API。
 
-`v0.3.5` · 2435 行 Splash · 5 屏 · 14 张真实截图 · Apache-2.0
+`v0.4.0` · 2700+ 行 Splash · 5 屏 · 15 张真实截图 · Apache-2.0
 
 ---
 
@@ -83,7 +83,10 @@ OctoStudio 的所有 9 场景(原文二创 / 图文 / 视频分镜 / PPT / 拆�
 | 15 | **广场搜索** *(v0.3.5)* — 顶部搜索框,实时过滤作品标题/原文关键词(`on_change`) | 纯本地 | `screenshots/15-search.png` |
 | 16 | **标签筛选** *(v0.3.5)* — 标签 chips 从已有作品聚合;生成时按场景/风格自动打标签;点 chip 过滤作品 | 纯本地 | `screenshots/16-tags.png` |
 | 17 | **AI 历史** *(v0.3.5)* — 每篇作品最近 3 条 `{prompt, result}`,卡片可展开查看 | 纯本地 | `screenshots/17-history.png` |
-| 18 | **宣传片 / 宣传图** *(规划中)* — 初赛路演与商店展示物料(片源工程在 `promo/` 迭代中) | 工具链 | 规划中 |
+| 18 | **M3 尾巴** *(v0.4.0)* — 排序 chips(最新 / 最早 / 按场景)/ 多选批量删除 / 撤销栈(保存前快照 5 步)/ 一键全选+复制 导出文本 | `storage` | 排序 chips 实拍 |
+| 19 | **AI 助手 7 项** *(v0.4.0)* — 工坊屏 model 助手面板 — 自动起标题/关键词/摘要/风格迁移(4 风格)/中英对照/标题打分/模型预算;`class: "fast"` 节省配额 | `model` | 规划中 |
+| 20 | **glance 卡片** *(v0.4.0)* — 启动时声明 `glance` capability;提供 `glance.publish` / `glance.withdraw` 助手,降级时按钮置灰 | `glance` | 规划中 |
+| 21 | **宣传片 / 宣传图** *(规划中)* — 初赛路演与商店展示物料(片源工程在 `promo/` 迭代中) | 工具链 | 规划中 |
 
 未来规划(见 [`ROADMAP.md`](ROADMAP.md)):个人风格工坊、主题网络抓取、拟人化文章生成、glance 卡片分发。
 
@@ -182,11 +185,11 @@ OctoStudio 用到的 OctoSense 平台能力(声明在 `bundle/manifest.json`):
 | M0 / M1 意图创作 + 多格式导出 | v0.2.0 | ✅ 已落地 |
 | M2 创作者工作流补齐 | v0.2.x | ✅ 已落地 |
 | M3 场景广场(9 生成场景 + 通用编辑器 + 主题样式 + 制作包/Marp/markmap) | v0.3.0 | ✅ 已落地 |
-| M3' 内容管理(搜索 / 标签筛选 / AI 历史) | v0.3.5 | ✅ 已落地(本轮) |
-| M3+ 个人风格工坊 + 主题网络抓取 | v0.3.x | 规划中 |
-| M4 `model.complete` 高阶用法 | v0.4.0 | 部分提前落地(标题 / 合成建议 / 拆解) |
-| M5 拟人化文章生成 | v0.4.0 | 规划中 |
-| M6 glance 卡片(发布到 glance 屏) | v0.5.0 | 规划中 |
+| M3' 内容管理(搜索 / 标签筛选 / AI 历史) | v0.3.5 | ✅ 已落地 |
+| M3" 排序 + 多选 + 撤销 + 一键复制 | v0.4.0 | ✅ 已落地(本轮) |
+| M4 `model.complete` 高阶用法 | v0.4.0 | ✅ 已落地(本轮):AI 助手 7 项(起标题/关键词/摘要/风格迁移/中英对照/标题打分/模型预算) |
+| M5 glance 卡片 | v0.4.0 | ✅ 能力声明已加(`glance` capability + `glance.publish`/`glance.withdraw` 助手);UI 渲染待 Splash VM 修复 |
+| M6 拟人化文章生成 | v0.5.0 | 规划中 |
 | M7 等平台(视频 widget / 触发器 / toolbox-peers / `sys.digest`) | — | 等 OctoSense |
 
 ---

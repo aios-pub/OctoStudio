@@ -141,7 +141,7 @@
 > **2026-10-04 状态:场景广场(9 生成场景 + 通用编辑器 + 主题样式 + 制作包/Marp/markmap 导出)已在 v0.3.0 落地**;本节其余条目(搜索/排序/批量删/撤销/标签)仍待做。
 
 | 功能 | 备注 |
-| --- | --- |
+|---|---|
 | 搜索(按 title / source 子串) | 顶部加 `TextInput` + `on_change` 即时过滤 works_list |
 | 排序(按 updated 倒序 / 正序 / 按 style) | 顶部 chip 切换,改变 `works_list` 渲染顺序 |
 | 多选批量删除 | 卡片进入"多选模式"(checkbox),底部出操作条 |
@@ -150,10 +150,14 @@
 | AI 历史(每篇作品最近 3 条 `{prompt, result}`) | 存 `works.json.history`;Studio 屏"查看历史"展开 |
 | 一键"全选 + 复制"提示 | 沿用 v0.1 选区复制,加"全选"快捷手势(在 Export 屏里) |
 
+**实际状态(2026-10-05,v0.3.5 提交):**搜索、标签、AI 历史已在 v0.3.5 落地;
+M3 尾巴(排序 / 多选批量删除 / 撤销栈 / 一键全选+复制)在 v0.4.0 落地。
+已知问题:works_list 在 card-host 下因 Splash VM 闭包捕获限制只渲染最近 1 张卡片;真实宿主(OctoSense Shell / Rinx)无此限制。
+
 ### M4 — v0.4.0 `model.complete` 高阶用法(1 天)
 
 | 功能 | schema |
-| --- | --- |
+|---|---|
 | 自动起标题 | `{title: string maxLength: 40}` |
 | 关键词提取 | `{keywords: string[] maxItems: 5}` |
 | 自动摘要(为长原文生成 100 字以内摘要) | `{summary: string maxLength: 200}` |
@@ -164,10 +168,15 @@
 
 全部走 `class: "fast"`,保持 6/min 与每日预算;schema 全部强制。降级文案沿用 M1。
 
+**实际状态(2026-10-05,v0.4.0 提交):**全部 7 项已在 bundle/main.splash 实现
+(`ai_gen_title` / `ai_extract_keywords` / `ai_summarize` / `ai_style_variants` /
+`ai_translate_zh_en` / `ai_score_title` / `ai_budget`),UI 按钮放在 studio_view
+工坊屏的"AI 助手(model 7 项)"面板中,结果显示在 `ai_result_label`。
+
 ### M5 — v0.5.0 glance 卡片(半天)
 
 | 功能 | 改法 |
-| --- | --- |
+|---|---|
 | 启用 `glance` capability | `manifest.json` capabilities 加 `"glance"` |
 | 发布"今日灵感" | 进入应用时若有最新一篇未发布作品,提示"发送到 glance?" |
 | 发布"今日推荐作品" | Home 屏每张卡片菜单加"发到 glance" |
@@ -175,6 +184,11 @@
 | L0 卡片源(本地字符串,不用 `sys.digest`) | `bundle/assets/glance-today.card`(纯 L0 文本,引用 `data` 字段) |
 | 降级文案 | `card-host` 显示 `no service answers "glance"`,按钮置灰 |
 | 截图 | `09-glance-publish.png`,`10-glance-degraded.png` |
+
+**实际状态(2026-10-05,v0.4.0 提交):**`glance` capability 已声明;助手函数
+`glance_publish_current` / `glance_withdraw` 在 main.splash 实现;L0 卡片源
+`bundle/assets/glance-today.card` 已建。UI 元素已加在 `assist` 区域,card-host 下
+降级文案显示"glance 服务不可用"。
 
 ### M6 — v0.6.0 应用 Agent + `tools.json`(准入检查可用,实际收益有限)
 

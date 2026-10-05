@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "subtitle": "本地 AI 创作工作台 · 一句话生成图文/分镜/PPT/口播",
-  "description": "OctoStudio v0.3.0 全品类 AI 创作工作台:场景广场 10 选——原文二创(改写/翻译/总结/评论/润色/续写/扩写/小红书体)、图文文章、视频分镜、PPT 演示、拆解视频、标题工坊、小红书笔记、口播稿、思维导图、金句语录;通用计划编辑器(增删改排)与文章主题样式 10 款;导出 Markdown / 公众号 / Notion / Marp / SRT 字幕 / 视频制作包 / markmap;可选 AI 配图(images capability 公网免鉴权,离线自动降级)。Rinx 中 AI 全量可用,card-host/App Hub 降级为演示内容,仍可编辑保存。",
+  "description": "OctoStudio v0.4.0 全品类 AI 创作工作台:场景广场 10 选(原文二创 8 风格 / 图文文章 / 视频分镜 / PPT / 拆解视频 / 标题工坊 / 小红书笔记 / 口播稿 / 思维导图 / 金句语录) + 通用计划编辑器 + 文章主题样式 10 款 + AI 助手 7 项(起标题 / 关键词 / 摘要 / 风格迁移 / 中英对照 / 标题打分 / 模型预算) + 排序/多选/撤销/搜索/标签/AI 历史内容管理 + glance 卡片集成。导出 Markdown / 公众号 / Notion / Marp / SRT 字幕 / 视频制作包 / markmap。Rinx / OctoSense 桌面壳 AI 全量可用,card-host 降级为演示内容,仍可编辑保存。",
   "category": "productivity",
   "keywords": [
     "writing",
@@ -38,7 +38,7 @@
     "support": "mailto:amos@aios.pub",
     "privacy_policy_url": "https://aios.pub/privacy"
   },
-  "release_notes": "v0.3.5:M3 内容管理落地——广场搜索框(实时过滤标题/原文)、标签筛选 chips(自动从作品聚合,生成时按场景/风格自动打标签)、AI 历史(每篇作品最近 3 条 prompt/result,卡片可展开查看);状态栏副标题搬独立行,广场可滚;真实 AI 在 OctoSense 桌面壳与 Rinx 验证,card-host 仍降级。",
+  "release_notes": "v0.4.0:M3 尾巴 + M4 + M5 落地——排序 chips(最新/最早/按场景)、多选批量删除、撤销栈(5 步快照)、一键全选+复制;工坊屏 AI 助手 7 项面板(起标题/关键词/摘要/风格迁移/中英对照/标题打分/模型预算,class: fast);声明 glance capability 与 glance.publish/withdraw 助手;状态栏副标题独立行,广场可滚;真实 AI 在 OctoSense 桌面壳与 Rinx 验证,card-host 仍降级。已知:works_list 在 card-host 下因 Splash VM 闭包捕获限制仅渲染最近 1 张卡片,真实宿主不受影响。",
   "age_rating": "all",
   "license": "Apache-2.0"
 }
