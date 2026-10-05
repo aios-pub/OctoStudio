@@ -16,7 +16,7 @@
   "integrity": {
     "bundle_blake3": "0d81c8a5409f8d9fe58d66fc27574232ab4af914093d703d7342b9279bea14e2",
     "signature": {
-      "key_id": "amosarc",
+      "key_id": "aios.pub",
       "value": "616ba4524b9650c48dee7d1a078b77594b3733d751708ca5e85cf58f151e444a0c2d99f261e2313077cb9d436aacddbdc2137820ac030612dfc2f727d7163f00"
     }
   },

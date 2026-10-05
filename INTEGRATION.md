@@ -34,10 +34,10 @@ CARGO_TARGET_DIR=/Volumes/PSSD/dev/rust-target python3 tools/kernel-artifact.py 
 ANCHOR=$($HUB keygen $KEYS/anchor.key)
 $HUB keygen $KEYS/working.key > /dev/null
 CERT=$($HUB certify --anchor $KEYS/anchor.key --working $KEYS/working.key)
-$HUB sign-manifest $APP/bundle --key ~/.octosense/amosarc-publisher.key --key-id amosarc
+$HUB sign-manifest $APP/bundle --key ~/.octosense/aios.pub-publisher.key --key-id aios.pub
 $HUB publish $APP/bundle --catalog $M/catalog.json --key $KEYS/working.key \
-  --anchor-cert "$CERT" --publisher amosarc \
-  --publisher-key "amosarc=$($HUB pubkey ~/.octosense/amosarc-publisher.key)" \
+  --anchor-cert "$CERT" --publisher aios.pub \
+  --publisher-key "aios.pub=$($HUB pubkey ~/.octosense/aios.pub-publisher.key)" \
   --repo https://github.com/aios-pub/OctoStudio.git \
   --commit "$(git -C $APP rev-parse HEAD)" --out $M
 $HUB verify $M/catalog.json --anchor "$ANCHOR"    # → catalog sequence 1 verified
@@ -68,10 +68,10 @@ OCTOSENSE_HUB_ANCHOR="$(cat /Volumes/PSSD/CodeProjects/octostudio/build/anchor.h
 ```sh
 cd $APP && <改 bundle/main.splash 等>
 OCTO=/Volumes/PSSD/CodeProjects/OctoScript-App-Design-Flow/tools/octo && $OCTO check bundle
-$HUB sign-manifest bundle --key ~/.octosense/amosarc-publisher.key --key-id amosarc
+$HUB sign-manifest bundle --key ~/.octosense/aios.pub-publisher.key --key-id aios.pub
 $HUB publish bundle --catalog $M/catalog.json --key $KEYS/working.key \
-  --anchor-cert "$CERT" --publisher amosarc \
-  --publisher-key "amosarc=$($HUB pubkey ~/.octosense/amosarc-publisher.key)" \
+  --anchor-cert "$CERT" --publisher aios.pub \
+  --publisher-key "aios.pub=$($HUB pubkey ~/.octosense/aios.pub-publisher.key)" \
   --repo https://github.com/aios-pub/OctoStudio.git --commit "$(git rev-parse HEAD)" --out $M
 # 重启壳(带上面的环境变量)→ App Hub 里会出现新版本 → Get 安装
 ```
