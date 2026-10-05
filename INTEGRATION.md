@@ -4,6 +4,18 @@
 > 经内置 AI 助手(agnes-3.0-flash provider)真实生成,`octos.*` 服务就绪。
 > 本文档记录接入机制、一次性准备(已完成)、日常启动命令与更新流程。
 
+## 一个重要的诚实披露:card-host CLI 下的能力
+
+`tools/octo run bundle` 启动的 card-host **不会**接入 `model` / `octos` 服务,
+即使 `manifest.json` 声明了这些 capability。`host.has("model")` 在 card-host 下
+**仍返回 true**(基于 manifest 声明,不基于实际服务)——这是 card-host 的设计。
+本应用 v0.3.3 起在 card-host 下的状态栏会显式提示"AI 仅声明,未连接",并
+**所有 9 场景生成与工坊二创都降级为演示内容**(原 BRIEF 0.3.x 范围)。
+
+如需真实 AI 能力,需在 **OctoSense 桌面壳或 Rinx 小程序**中以 hosted 模式
+运行(本节下方及 README 都有详细步骤)。OctoSense 桌面壳通过 `kernel-artifact.py`
+内置 octos 内核与 provider,提供完整 AI 链路。
+
 ## 接入机制(为什么这样做)
 
 - OctoSense 桌面壳(`/Volumes/PSSD/CodeProjects/OctoSense`,包 `octosense`)通过内嵌的
@@ -34,10 +46,10 @@ CARGO_TARGET_DIR=/Volumes/PSSD/dev/rust-target python3 tools/kernel-artifact.py 
 ANCHOR=$($HUB keygen $KEYS/anchor.key)
 $HUB keygen $KEYS/working.key > /dev/null
 CERT=$($HUB certify --anchor $KEYS/anchor.key --working $KEYS/working.key)
-$HUB sign-manifest $APP/bundle --key ~/.octosense/amosgeek-publisher.key --key-id amosgeek
+$HUB sign-manifest $APP/bundle --key ~/.octosense/aios.pub-publisher.key --key-id aios.pub
 $HUB publish $APP/bundle --catalog $M/catalog.json --key $KEYS/working.key \
-  --anchor-cert "$CERT" --publisher amosgeek \
-  --publisher-key "amosgeek=$($HUB pubkey ~/.octosense/amosgeek-publisher.key)" \
+  --anchor-cert "$CERT" --publisher aios.pub \
+  --publisher-key "aios.pub=$($HUB pubkey ~/.octosense/aios.pub-publisher.key)" \
   --repo https://github.com/aios-pub/OctoStudio.git \
   --commit "$(git -C $APP rev-parse HEAD)" --out $M
 $HUB verify $M/catalog.json --anchor "$ANCHOR"    # → catalog sequence 1 verified
@@ -68,10 +80,10 @@ OCTOSENSE_HUB_ANCHOR="$(cat /Volumes/PSSD/CodeProjects/octostudio/build/anchor.h
 ```sh
 cd $APP && <改 bundle/main.splash 等>
 OCTO=/Volumes/PSSD/CodeProjects/OctoScript-App-Design-Flow/tools/octo && $OCTO check bundle
-$HUB sign-manifest bundle --key ~/.octosense/amosgeek-publisher.key --key-id amosgeek
+$HUB sign-manifest bundle --key ~/.octosense/aios.pub-publisher.key --key-id aios.pub
 $HUB publish bundle --catalog $M/catalog.json --key $KEYS/working.key \
-  --anchor-cert "$CERT" --publisher amosgeek \
-  --publisher-key "amosgeek=$($HUB pubkey ~/.octosense/amosgeek-publisher.key)" \
+  --anchor-cert "$CERT" --publisher aios.pub \
+  --publisher-key "aios.pub=$($HUB pubkey ~/.octosense/aios.pub-publisher.key)" \
   --repo https://github.com/aios-pub/OctoStudio.git --commit "$(git rev-parse HEAD)" --out $M
 # 重启壳(带上面的环境变量)→ App Hub 里会出现新版本 → Get 安装
 ```

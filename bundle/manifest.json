@@ -6,7 +6,8 @@
     "web",
     "octos.session.open",
     "octos.turn.start",
-    "model"
+    "model",
+    "glance"
   ],
   "compute": {
     "instruction_budget": null,
@@ -14,10 +15,10 @@
   },
   "id": "octostudio",
   "integrity": {
-    "bundle_blake3": "76602bf4566415e3e57bf6c387603f98e7eebace73abb7d089b61ae6c1a4ec55",
+    "bundle_blake3": "5faec99f3b7341404bfc2c2576ee3f6b68e6ce9fcceb3dd481b088e199d7f6a0",
     "signature": {
-      "key_id": "amosgeek",
-      "value": "c6002d31d7bb2ddc15b48583e9bb6a69ed86b4a37dc1938514392db8b9b57183233c9098d3cff8213445f5875206cec6bac2206472beeedae6002fd9e447a909"
+      "key_id": "aios.pub",
+      "value": "68b81c969ad1c3a39203414bcb7ed55ce81a8223c2e3db76ba4802ac15472dc648eb9c96ae6ecafb2b66ba41444499af00f6d6a4be9a486aba6d74e538e84b0c"
     }
   },
   "name": "OctoStudio",
@@ -28,5 +29,5 @@
   "storage": {
     "max_bytes": null
   },
-  "version": "0.3.3"
+  "version": "0.4.3"
 }

@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "kind": "glance-today",
+  "label": "今日灵感",
+  "data": {
+    "headline": "OctoStudio 今日灵感",
+    "subtitle": "一句话,就是一篇文",
+    "footer": "open app to write"
+  }
+}
