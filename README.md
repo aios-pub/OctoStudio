@@ -2,13 +2,26 @@
 
 > **言出法随 · 意图即应用 — 一句话,就是一篇文**
 
-![Plaza — 创作广场 · 10 个场景入口 + 本地作品库](bundle/screenshots/01-plaza.png)
+<!-- 视频预览(60s @ 30fps,18 景精确 60s · v0.4.3 全品类:10 主题 / 5 视频预设 / M3 内容管理 / AI 助手 7 项 / 3 宿主真实运行) -->
+<p align="center">
+  <a href="https://github.com/aios-pub/OctoStudio/raw/main/assets/promo-v10.mp4">
+    <img src="assets/promo-frames/preview.png" alt="OctoStudio promo v10 — 言出法随 · 意图即创作" width="960">
+  </a>
+</p>
+
+<p align="center">
+  <video src="assets/promo-v10.mp4" controls width="960" preload="metadata"></video>
+</p>
+
+<p align="center">
+  <sub>🎬 <a href="https://github.com/aios-pub/OctoStudio/raw/main/assets/promo-v10.mp4">下载 60s 完整版 (14.9 MB)</a> · 帧快照见 <a href="assets/promo-frames/">assets/promo-frames/</a> · 源工程 <a href="promo/">promo/</a> (fframes · Skia · 1920×1080 @ 30fps)</sub>
+</p>
 
 一句话,就是一篇文。
 
 OctoStudio 让创作者的意图直接成为产物 — **言出法随,意图即应用**。跑在 [OctoSense](https://github.com/OctoSense-org) 设备上的脚本应用,整个 `bundle/` 就是一个 `main.splash` 文件,在隔离沙箱里被 Splash VM 解释执行。面向中文内容创作者(公众号作者 / Markdown 写作者 / 视频脚本写手):用一句话或一段原文,生成可发布到多个平台的内容,作品全部存在你设备本地,AI 用的是你设备上的模型而非云端 API。
 
-`v0.4.2` · 2700+ 行 Splash · 5 屏 · 15 张真实截图 · Apache-2.0
+`v0.4.3` · 3017 行 Splash · 5 屏 · 22 张真实截图 · Apache-2.0
 
 ---
 
@@ -67,23 +80,23 @@ OctoStudio 的所有 9 场景(原文二创 / 图文 / 视频分镜 / PPT / 拆�
 | # | 能力 | 用到的平台能力 | 截图 |
 |---|---|---|---|
 | 1 | **原文二创 × 8 种风格** — 粘贴原文,改写 / 翻译 / 总结 / 评论 / 润色 / 续写 / 扩写 / 小红书体 | `octos.turn.start` | 规划补拍 |
-| 2 | **图文文章** — 一句话 → 标题+摘要+段落+每段英文生图 prompt,配 **AI 配图** | `model.complete` + `images` | [`03`](bundle/screenshots/03-article-images.png) |
-| 3 | **视频分镜** — 一句话 → 4–6 镜(时长/景别/画面/配音/生视频 prompt)+ 风格预设 ×5 | `model.complete` + `images` | [`06`](bundle/screenshots/06-video-comp.png) |
-| 4 | **AI 合成建议** — 分镜之上二次生成转场/配乐/节奏/调色/字幕/输出参数 | `model.complete` | [`06`](bundle/screenshots/06-video-comp.png) |
-| 5 | **视频制作包** — SRT 字幕(时间轴由分镜确定性生成)+ 素材清单 + ffmpeg 参考命令,照做即成片 | 纯文本转换 | [`07`](bundle/screenshots/07-export-srt.png) / [`08`](bundle/screenshots/08-export-pack.png) |
-| 6 | **PPT 演示** — 一句话 → 5–10 页(要点/讲稿/配图 prompt),导出 **Marp** 粘到 marp.app 即放映 | `model.complete` + `images` | [`05`](bundle/screenshots/05-ppt-plan.png) / [`09`](bundle/screenshots/09-export-marp.png) |
-| 7 | **拆解视频** — 粘贴爆款文字稿 → 结构/钩子/镜头语言/金句/**可复用骨架**,骨架可一键存为新分镜意图 | `model.complete` | [`10`](bundle/screenshots/10-teardown.png) |
+| 2 | **图文文章** — 一句话 → 标题+摘要+段落+每段英文生图 prompt,配 **AI 配图** | `model.complete` + `images` | [`03`](assets/promo-frames/03-article-images.png) |
+| 3 | **视频分镜** — 一句话 → 4–6 镜(时长/景别/画面/配音/生视频 prompt)+ 风格预设 ×5 | `model.complete` + `images` | [`06`](assets/promo-frames/06-video-comp.png) |
+| 4 | **AI 合成建议** — 分镜之上二次生成转场/配乐/节奏/调色/字幕/输出参数 | `model.complete` | [`06`](assets/promo-frames/06-video-comp.png) |
+| 5 | **视频制作包** — SRT 字幕(时间轴由分镜确定性生成)+ 素材清单 + ffmpeg 参考命令,照做即成片 | 纯文本转换 | [`07`](assets/promo-frames/07-export-srt.png) / [`08`](assets/promo-frames/08-export-pack.png) |
+| 6 | **PPT 演示** — 一句话 → 5–10 页(要点/讲稿/配图 prompt),导出 **Marp** 粘到 marp.app 即放映 | `model.complete` + `images` | [`05`](assets/promo-frames/05-ppt-plan.png) / [`09`](assets/promo-frames/09-export-marp.png) |
+| 7 | **拆解视频** — 粘贴爆款文字稿 → 结构/钩子/镜头语言/金句/**可复用骨架**,骨架可一键存为新分镜意图 | `model.complete` | [`10`](assets/promo-frames/10-teardown.png) |
 | 8 | **标题工坊** — 一句话或原文 → 8 个候选标题 + 风格标签 + 推荐指数 | `model.complete` | — |
 | 9 | **小红书笔记 / 口播稿 / 思维导图 / 金句语录** — 标题+正文+标签+配图 / 钩子+节拍+CTA / markmap 导图 / 场景化金句 | `model.complete` + `images` | — |
-| 10 | **文章主题样式 ×10** — 公众号深度/干货清单/情感散文/知乎科普/诗歌意象……注入生成 prompt,随作品保存 | 本地数据 | [`02`](bundle/screenshots/02-compose-theme.png) |
-| 11 | **通用计划编辑器** — 任何场景的产物逐条 **编辑/上移/下移/删除/新增** | 纯本地 | [`04`](bundle/screenshots/04-edit-panel.png) |
-| 12 | **多格式导出** — Markdown / 公众号 / Notion / Marp / SRT / 制作包 / markmap,按场景动态出现 | 纯文本转换 | [`07`–`09`](bundle/screenshots/07-export-srt.png) |
-| 13 | **本地作品库** — 分类图标/相对时间/长按删除,存设备沙箱;v0.2 数据自动迁移 | `storage` | [`01`](bundle/screenshots/01-plaza.png) |
+| 10 | **文章主题样式 ×10** — 公众号深度/干货清单/情感散文/知乎科普/诗歌意象……注入生成 prompt,随作品保存 | 本地数据 | [`02`](assets/promo-frames/02-compose-theme.png) |
+| 11 | **通用计划编辑器** — 任何场景的产物逐条 **编辑/上移/下移/删除/新增** | 纯本地 | [`04`](assets/promo-frames/04-edit-panel.png) |
+| 12 | **多格式导出** — Markdown / 公众号 / Notion / Marp / SRT / 制作包 / markmap,按场景动态出现 | 纯文本转换 | [`07`–`09`](assets/promo-frames/07-export-srt.png) |
+| 13 | **本地作品库** — 分类图标/相对时间/长按删除,存设备沙箱;v0.2 数据自动迁移 | `storage` | [`01`](assets/promo-frames/01-plaza.png) |
 | 14 | **降级完备** — 任何 AI 服务不可用 → 填入演示内容,仍可编辑保存,失败原因原样显示 | `host.has()` + 预置 demo | 全程 |
-| 15 | **广场搜索** *(v0.3.5)* — 顶部搜索框,实时过滤作品标题/原文关键词(`on_change`) | 纯本地 | `screenshots/15-search.png` |
-| 16 | **标签筛选** *(v0.3.5)* — 标签 chips 从已有作品聚合;生成时按场景/风格自动打标签;点 chip 过滤作品 | 纯本地 | `screenshots/16-tags.png` |
-| 17 | **AI 历史** *(v0.3.5)* — 每篇作品最近 3 条 `{prompt, result}`,卡片可展开查看 | 纯本地 | `screenshots/17-history.png` |
-| 18 | **M3 尾巴** *(v0.4.0)* — 排序 chips(最新 / 最早 / 按场景)/ 多选批量删除 / 撤销栈(保存前快照 5 步)/ 一键全选+复制 导出文本 | `storage` | 排序 chips 实拍 |
+| 15 | **广场搜索** *(v0.3.5)* — 顶部搜索框,实时过滤作品标题/原文关键词(`on_change`) | 纯本地 | [`15`](assets/promo-frames/15-search-empty.png) |
+| 16 | **标签筛选** *(v0.3.5)* — 标签 chips 从已有作品聚合;生成时按场景/风格自动打标签;点 chip 过滤作品 | 纯本地 | [`16`](assets/promo-frames/16-plaza-with-tags.png) |
+| 17 | **AI 历史** *(v0.3.5)* — 每篇作品最近 3 条 `{prompt, result}`,卡片可展开查看 | 纯本地 | 视频 38s |
+| 18 | **M3 尾巴** *(v0.4.0)* — 排序 chips(最新 / 最早 / 按场景)/ 多选批量删除 / 撤销栈(保存前快照 5 步)/ 一键全选+复制 导出文本 | `storage` | 视频 38s |
 | 19 | **AI 助手 7 项** *(v0.4.0)* — 工坊屏 model 助手面板 — 自动起标题/关键词/摘要/风格迁移(4 风格)/中英对照/标题打分/模型预算;`class: "fast"` 节省配额 | `model` | 规划中 |
 | 20 | **glance 卡片** *(v0.4.0)* — 启动时声明 `glance` capability;提供 `glance.publish` / `glance.withdraw` 助手,降级时按钮置灰 | `glance` | 规划中 |
 | 21 | **宣传片 / 宣传图** *(规划中)* — 初赛路演与商店展示物料(片源工程在 `promo/` 迭代中) | 工具链 | 规划中 |
@@ -91,7 +104,7 @@ OctoStudio 的所有 9 场景(原文二创 / 图文 / 视频分镜 / PPT / 拆�
 ## AI 能力真实测试报告(v0.4.0)
 
 > 测试日期:**2026-10-05**。测试方式:在 `bundle/main.splash` 加入临时 `probe_all()` 函数,在 card-host 下点击「运行 AI 能力探查」按钮一次性发出 14 个 `host.request` 调用,把每个返回的 `is_ok` / `error` 拼成多行日志显示在屏。
-> 截图:`![probe](bundle/screenshots/21-probe-results-cardhost.png)`
+> 截图:[`assets/promo-frames/21-probe-results-cardhost.png`](assets/promo-frames/21-probe-results-cardhost.png)
 
 ### 能力矩阵与现状
 
@@ -357,41 +370,18 @@ test result: ok. 787 passed; 0 failed
 
 ## 5 分钟走一遍
 
-1. **逛创作广场** — 10 张场景卡一眼排开,下面是本地作品库
+> 完整流程与画面见上方 [60s 视频](#) — 这里只列文字版。
 
-   ![Plaza](bundle/screenshots/01-plaza.png)
-
+1. **逛创作广场** — 10 张场景卡一眼排开,下面是本地作品库(见 `assets/promo-frames/01-plaza.png`)
 2. **选主题样式** — 点「图文文章」,挑一款「文章主题样式」(如 🌙 情感散文),写下一句话意图
-
-   ![Compose](bundle/screenshots/02-compose-theme.png)
-
 3. **图文 plan + AI 配图** — 每段一个卡片:标题/正文/生图 prompt,卡片下方是可选增强的真实 AI 配图(离线自动忽略)
-
-   ![Article](bundle/screenshots/03-article-images.png)
-
 4. **编辑器随手改** — 点「编辑」就地展开面板(留空 = 不修改),上移/下移/删除/新增随心意
-
-   ![Edit](bundle/screenshots/04-edit-panel.png)
-
 5. **一句话生成 PPT** — 「PPT 演示」场景出 5–10 页大纲(要点/讲稿/配图 prompt)
-
-   ![PPT](bundle/screenshots/05-ppt-plan.png)
-
 6. **视频:分镜 → 合成建议 → 制作包** — 生成 4–6 镜后点「AI 合成建议」得到转场/配乐/调色;导出页切「SRT字幕」拿时间轴字幕,切「制作包」拿到素材清单 + SRT + 合成建议 + ffmpeg 参考命令,照做即成片
-
-   ![Comp](bundle/screenshots/06-video-comp.png)
-
-   ![SRT](bundle/screenshots/07-export-srt.png)
-
-   ![Pack](bundle/screenshots/08-export-pack.png)
-
 7. **Marp 一键成演示** — PPT 场景导出 Marp 文本,粘到 marp.app 即放映/导出 PDF
-
-   ![Marp](bundle/screenshots/09-export-marp.png)
-
 8. **拆解一个爆款** — 粘文字稿进「拆解视频」,得到结构/钩子/镜头语言/金句与可复用骨架,「存为分镜模板」直接变成你的下一支片
 
-   ![Teardown](bundle/screenshots/10-teardown.png)
+> 完整 22 张实拍截图(交付给 App Hub listing + 文档)统一维护在 [`assets/promo-frames/`](assets/promo-frames/)。`bundle/screenshots/` 保留 8 张给 App Hub listing(原 `bundle/listing.json` 引用),其余都在 `assets/promo-frames/`。
 
 ## 设计理念
 
