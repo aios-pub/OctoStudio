@@ -1,4 +1,5 @@
-//! OctoStudio promo v9 — three hosts, real captures, full scenario coverage
+//! OctoStudio promo v10 — v0.4.3 全品类:10 主题 / 5 视频预设 / M3 内容管理 / AI 助手 7 项
+//! 18 景精确 60.000s @ 30fps;v9(16 景/60s)+ M3Content + AiAssistant + 主题×10 + 视频预设×5
 use fframes::{
     AnimateRuntimeInput, AudioMap, AudioTrack, Color, Duration, FFramesContext, Frame, Scene,
     Scenes, Svgr, Transform, Video,
@@ -128,6 +129,8 @@ pub struct PromoVideo<'a> {
     flow: FlowScene,
     constellation: ConstellationScene,
     export: ExportScene,
+    m3_content: M3ContentScene,
+    ai_assistant: AiAssistantScene,
     hosts_intro: HostsIntroScene,
     hosts_desktop: HostsDesktopScene,
     hosts_card: HostsCardScene,
@@ -150,6 +153,8 @@ impl<'a> PromoVideo<'a> {
             flow: FlowScene,
             constellation: ConstellationScene,
             export: ExportScene,
+            m3_content: M3ContentScene,
+            ai_assistant: AiAssistantScene,
             hosts_intro: HostsIntroScene,
             hosts_desktop: HostsDesktopScene,
             hosts_card: HostsCardScene,
@@ -176,21 +181,23 @@ impl Video for PromoVideo<'_> {
     fn audio(&self) -> AudioMap<'_> {
         AudioMap::from([
             AudioTrack::new("bgm60.wav", Second(0.)..Eof).gain_db(-5.0).fade_in(1.5).fade_out(2.5),
-            // whooshes at big transitions
-            AudioTrack::new("whoosh-sfx.wav", Second(6.85)..Eof).volume(1.4),
-            AudioTrack::new("whoosh-sfx.wav", Second(12.85)..Eof).volume(1.4),
-            AudioTrack::new("whoosh-sfx.wav", Second(30.85)..Eof).volume(1.4),
-            AudioTrack::new("whoosh-sfx.wav", Second(35.35)..Eof).volume(1.4),
-            AudioTrack::new("whoosh-sfx.wav", Second(48.85)..Eof).volume(1.4),
-            // hosts_intro entrance beat
-            AudioTrack::new("whoosh-sfx.wav", Second(50.95)..Eof).volume(1.4),
-            // pops: plaza click + phones
-            AudioTrack::new("pop-sfx.wav", Second(9.3)..Eof).volume(1.4),
-            AudioTrack::new("pop-sfx.wav", Second(31.35)..Eof).volume(1.0),
-            AudioTrack::new("pop-sfx.wav", Second(31.8)..Eof).volume(1.0),
-            AudioTrack::new("pop-sfx.wav", Second(44.8)..Eof).volume(0.7),
-            AudioTrack::new("pop-sfx.wav", Second(45.4)..Eof).volume(0.7),
-            AudioTrack::new("pop-sfx.wav", Second(46.0)..Eof).volume(0.7),
+            // whooshes at big section transitions (v10 timing)
+            AudioTrack::new("whoosh-sfx.wav", Second(6.85)..Eof).volume(1.4),   // Plaza entrance
+            AudioTrack::new("whoosh-sfx.wav", Second(14.0)..Eof).volume(1.2),   // Compose entrance
+            AudioTrack::new("whoosh-sfx.wav", Second(25.5)..Eof).volume(1.2),   // More formats
+            AudioTrack::new("whoosh-sfx.wav", Second(34.5)..Eof).volume(1.2),   // Export
+            AudioTrack::new("whoosh-sfx.wav", Second(38.0)..Eof).volume(1.4),   // M3 content
+            AudioTrack::new("whoosh-sfx.wav", Second(42.0)..Eof).volume(1.4),   // AI assistant
+            AudioTrack::new("whoosh-sfx.wav", Second(45.5)..Eof).volume(1.4),   // HostsIntro entrance
+            AudioTrack::new("whoosh-sfx.wav", Second(47.0)..Eof).volume(1.2),   // HostsDesktop
+            AudioTrack::new("whoosh-sfx.wav", Second(50.5)..Eof).volume(1.2),   // HostsCard
+            // pops: plaza click + UI beats
+            AudioTrack::new("pop-sfx.wav", Second(9.3)..Eof).volume(1.4),      // Plaza click
+            AudioTrack::new("pop-sfx.wav", Second(31.5)..Eof).volume(1.0),     // Constellation beat
+            AudioTrack::new("pop-sfx.wav", Second(31.9)..Eof).volume(1.0),     // Constellation beat 2
+            AudioTrack::new("pop-sfx.wav", Second(47.5)..Eof).volume(0.7),     // Hosts phone pop 1
+            AudioTrack::new("pop-sfx.wav", Second(48.0)..Eof).volume(0.7),     // Hosts phone pop 2
+            AudioTrack::new("pop-sfx.wav", Second(48.5)..Eof).volume(0.7),     // Hosts phone pop 3
         ])
     }
 
@@ -207,6 +214,8 @@ impl Video for PromoVideo<'_> {
             &self.flow,
             &self.constellation,
             &self.export,
+            &self.m3_content,
+            &self.ai_assistant,
             &self.hosts_intro,
             &self.hosts_desktop,
             &self.hosts_card,
@@ -331,6 +340,10 @@ impl Scene for IntroScene {
             <g opacity={sub_op}>
                 <text x="960" y="530" text-anchor="middle" font-size="26" letter-spacing="6" fill={ORANGE}>{"言出法随 · 意图即创作"}</text>
             </g>
+            <g opacity={ramp(&frame, 1.7)}>
+                <rect x="870" y="575" width="180" height="36" rx="18" fill={BG_CARD} stroke={ORANGE} stroke-width="1.2" />
+                <text x="960" y="599" text-anchor="middle" font-size="16" font-weight="700" fill={ORANGE}>{"v0.4.3 · 全品类工作台"}</text>
+            </g>
         </g>)
     }
 }
@@ -375,7 +388,7 @@ impl Scene for PhilosophyScene {
 #[derive(Debug)]
 struct PlazaScene;
 impl Scene for PlazaScene {
-    fn duration(&self) -> Duration<'_> { Duration::Seconds(5.0) }
+    fn duration(&self) -> Duration<'_> { Duration::Seconds(4.5) }
     fn render_frame<'a>(&'a self, frame: Frame, _ctx: &FFramesContext<'a, '_>) -> Svgr<'a> {
         let t = frame.seconds();
         let slide = slide_from_right(&frame, 0.3);
@@ -423,10 +436,12 @@ impl Scene for PlazaScene {
         let target_rise = rise(&frame, 2.65);
 
         static TAGS: &[(&str, f32, f32)] = &[
-            ("原文二创", 200.0, 440.0),
-            ("图文文章", 200.0, 530.0),
-            ("视频分镜", 200.0, 620.0),
-            ("PPT演示", 200.0, 710.0),
+            ("原文二创", 200.0, 410.0),
+            ("图文文章", 200.0, 475.0),
+            ("视频分镜", 200.0, 540.0),
+            ("PPT演示", 200.0, 605.0),
+            ("拆解视频", 200.0, 670.0),
+            ("口播稿", 200.0, 735.0),
         ];
         let tag_svgs: Vec<Svgr> = TAGS.iter().enumerate().map(|(i, (label, x, y))| {
             let bob = (t * 1.5 + i as f32 * 2.0).sin() * 8.0;
@@ -526,38 +541,80 @@ impl Scene for ScenarioGridScene {
 #[derive(Debug)]
 struct ComposeScene;
 impl Scene for ComposeScene {
-    fn duration(&self) -> Duration<'_> { Duration::Seconds(3.0) }
+    fn duration(&self) -> Duration<'_> { Duration::Seconds(3.5) }
     fn render_frame<'a>(&'a self, frame: Frame, _ctx: &FFramesContext<'a, '_>) -> Svgr<'a> {
         let slide = slide_from_right(&frame, 0.3);
 
+        // 10 文章主题样式(2 行 × 5 列)
         static THEMES: &[(&str, &str)] = &[
+            ("不限",     "#666666"),
             ("公众号深度", "#ff6b35"),
             ("干货清单",   "#e8b04b"),
             ("情感散文",   "#6ba6ff"),
             ("小红书种草", "#7fd0a8"),
             ("知乎科普",   "#c98bde"),
+            ("科技评测",   "#5fbf9f"),
+            ("旅行游记",   "#d68a5c"),
+            ("美食探店",   "#e85d75"),
+            ("诗歌意象",   "#9ea3c4"),
         ];
+        let card_w = 148.0f32;
+        let card_h = 60.0f32;
+        let gap_x = 12.0f32;
+        let gap_y = 16.0f32;
+        let x0 = 1080.0f32;
+        let y0 = 430.0f32;
         let styles_svgs: Vec<Svgr> = THEMES.iter().enumerate().map(|(i, (name, accent))| {
-            let st = 0.35 + i as f32 * 0.12;
+            let col = (i % 5) as f32;
+            let row = (i / 5) as f32;
+            let st = 0.35 + i as f32 * 0.06;
             let op = ramp(&frame, st);
-            let x = 200.0 + slide_from_left(&frame, st);
-            let degrees = -3.0 + i as f32 * 1.5;
-            let y = 480.0 + i as f32 * 62.0;
+            let x = x0 + col * (card_w + gap_x);
+            let y = y0 + row * (card_h + gap_y);
+            let degrees = -1.0 + (i as f32 * 0.6) - (row * 0.8);
             fframes::svgr!(<g font-family={FONT} font-weight={WEIGHT} opacity={op}
                 transform={format!("translate({} {}) rotate({})", x, y, degrees)}>
-                <rect x="-8" y="-24" width="252" height="48" rx="24" fill="#1a2130" stroke={PIPE} stroke-width="1" />
-                <rect x="-8" y="-24" width="6" height="48" rx="3" fill={accent} />
-                <text x="18" y="6" font-size="17" fill={INK}>{*name}</text>
+                <rect x="-8" y="-24" width={card_w + 16.0} height={card_h} rx="12" fill="#1a2130" stroke={PIPE} stroke-width="1" />
+                <rect x="-8" y="-24" width="6" height={card_h} rx="3" fill={accent} />
+                <text x="18" y="6" font-size="15" font-weight="700" fill={INK}>{*name}</text>
+            </g>)
+        }).collect();
+
+        // 5 视频风格预设(单行)
+        static PRESETS: &[(&str, &str)] = &[
+            ("电影感", "电影级调色"),
+            ("Vlog",   "手持跟拍"),
+            ("国风",   "水墨色调"),
+            ("赛博",   "霓虹光效"),
+            ("治愈",   "柔光暖调"),
+        ];
+        let p_x0 = 1080.0f32;
+        let p_y0 = 620.0f32;
+        let p_w = 148.0f32;
+        let p_h = 60.0f32;
+        let p_gap = 12.0f32;
+        let preset_svgs: Vec<Svgr> = PRESETS.iter().enumerate().map(|(i, (name, desc))| {
+            let st = 0.85 + i as f32 * 0.07;
+            let op = ramp(&frame, st);
+            let x = p_x0 + i as f32 * (p_w + p_gap);
+            fframes::svgr!(<g font-family={FONT} font-weight={WEIGHT} opacity={op}
+                transform={format!("translate({} {})", x, p_y0)}>
+                <rect x="-8" y="-26" width={p_w + 16.0} height={p_h} rx="12" fill="#141821" stroke={ORANGE} stroke-width="1" opacity="0.85" />
+                <text x="0" y="-2" font-size="14" font-weight="700" fill={INK}>{*name}</text>
+                <text x="0" y="20" font-size="10" fill={INK_SOFT}>{*desc}</text>
             </g>)
         }).collect();
 
         fframes::svgr!(<g font-family={FONT} font-weight={WEIGHT}>
             <g transform={format!("translate({} 0)", slide)} opacity={ramp(&frame, 0.3)}>
-                {desktop_window(720.0, 290.0, 1.05, kenburns(&frame), "02-compose-theme.png")}
+                {desktop_window(80.0, 290.0, 0.95, kenburns(&frame), "02-compose-theme.png")}
             </g>
-            <text x="200" y="310" font-size="44" font-weight="700" fill={INK} opacity={ramp(&frame, 0.4)}>{"选择主题样式"}</text>
-            <text x="200" y="358" font-size="22" fill={INK_SOFT} opacity={ramp(&frame, 0.55)}>{"10 种文章风格 · 一致语感"}</text>
+            <text x="960" y="130" text-anchor="middle" font-size="44" font-weight="700" fill={INK} opacity={ramp(&frame, 0.4)}>{"主题样式 · 视频预设"}</text>
+            <text x="960" y="175" text-anchor="middle" font-size="22" fill={INK_SOFT} opacity={ramp(&frame, 0.55)}>{"文章 10 风格 · 视频 5 预设 · 一致语感"}</text>
+            <text x="1080" y="395" font-size="18" font-weight="700" fill={ORANGE} opacity={ramp(&frame, 0.4)}>{"文章主题 × 10"}</text>
+            <text x="1080" y="585" font-size="18" font-weight="700" fill={ORANGE} opacity={ramp(&frame, 0.85)}>{"视频预设 × 5"}</text>
             {styles_svgs}
+            {preset_svgs}
             <rect width="1920" height="1080" fill={BG} opacity={dip_in(&frame)} />
         </g>)
     }
@@ -613,7 +670,7 @@ impl Scene for ArticleScene {
 #[derive(Debug)]
 struct VideoStoryScene;
 impl Scene for VideoStoryScene {
-    fn duration(&self) -> Duration<'_> { Duration::Seconds(4.5) }
+    fn duration(&self) -> Duration<'_> { Duration::Seconds(4.0) }
     fn render_frame<'a>(&'a self, frame: Frame, _ctx: &FFramesContext<'a, '_>) -> Svgr<'a> {
         let rise_y = rise(&frame, 0.3);
         let text_op = ramp(&frame, 1.0);
@@ -627,12 +684,36 @@ impl Scene for VideoStoryScene {
         ];
         let tag_svgs = tech_tags(t, TAGS);
 
+        // 5 视频风格预设 chips(右上)
+        static PRESETS: &[(&str, &str)] = &[
+            ("电影感", "#ff6b35"),
+            ("Vlog",   "#e8b04b"),
+            ("国风",   "#7fd0a8"),
+            ("赛博",   "#6ba6ff"),
+            ("治愈",   "#c98bde"),
+        ];
+        let chip_w = 130.0f32;
+        let chip_h = 36.0f32;
+        let chip_gap = 8.0f32;
+        let preset_svgs: Vec<Svgr> = PRESETS.iter().enumerate().map(|(i, (name, accent))| {
+            let st = 1.5 + i as f32 * 0.12;
+            let op = ramp(&frame, st);
+            let x = 1300.0 + (i as f32 - 2.0) * (chip_w + chip_gap);
+            let y = 280.0;
+            fframes::svgr!(<g font-family={FONT} font-weight={WEIGHT} opacity={op}
+                transform={format!("translate({} {})", x, y)}>
+                <rect x="-4" y="-18" width={chip_w} height={chip_h} rx="18" fill="#141821" stroke={accent} stroke-width="1" />
+                <circle cx="12" cy="-0" r="4" fill={accent} />
+                <text x="26" y="5" font-size="14" font-weight="700" fill={INK}>{*name}</text>
+            </g>)
+        }).collect();
+
         let cell_w = 130.0f32;
         let cell_h = 74.0f32;
         let pitch = 152.0f32;
         let strip_x = 200.0f32;
         let strip_y = 830.0f32;
-        let sweep = ((t - 1.0) / 3.0).clamp(0.0, 1.0);
+        let sweep = ((t - 1.0) / 2.5).clamp(0.0, 1.0);
         let head_x = strip_x + sweep * 890.0;
         static SHOT_LABELS: [&str; 6] = ["镜1", "镜2", "镜3", "镜4", "镜5", "镜6"];
         let strip_svgs: Vec<Svgr> = (0..6usize).map(|i| {
@@ -652,9 +733,11 @@ impl Scene for VideoStoryScene {
             </g>
             <g opacity={text_op}>
                 <text x="200" y="230" font-size="44" font-weight="700" fill={INK}>{"视频分镜"}</text>
-                <text x="200" y="275" font-size="20" fill={INK_SOFT}>{"转场 · 配乐 · 调色"}</text>
+                <text x="200" y="275" font-size="20" fill={INK_SOFT}>{"转场 · 配乐 · 调色 · 5 种风格预设"}</text>
             </g>
             {tag_svgs}
+            <text x="1300" y="248" text-anchor="middle" font-size="14" font-weight="700" fill={ORANGE} opacity={ramp(&frame, 1.4)}>{"风格预设 × 5"}</text>
+            {preset_svgs}
             <g opacity={strip_op}>
                 <text x="200" y="808" font-size="15" fill={INK_SOFT}>{"分镜时间轴 · 逐镜可编辑"}</text>
                 <line x1={strip_x} y1={strip_y + cell_h + 16.0} x2={strip_x + 890.0} y2={strip_y + cell_h + 16.0} stroke={PIPE} stroke-width="2" />
@@ -678,7 +761,7 @@ impl Scene for VideoStoryScene {
 #[derive(Debug)]
 struct MoreFormatsScene;
 impl Scene for MoreFormatsScene {
-    fn duration(&self) -> Duration<'_> { Duration::Seconds(3.5) }
+    fn duration(&self) -> Duration<'_> { Duration::Seconds(3.0) }
     fn render_frame<'a>(&'a self, frame: Frame, _ctx: &FFramesContext<'a, '_>) -> Svgr<'a> {
         let cap_a = ramp(&frame, 0.55);
         let cap_b = ramp(&frame, 0.95);
@@ -710,7 +793,7 @@ impl Scene for MoreFormatsScene {
 #[derive(Debug)]
 struct FlowScene;
 impl Scene for FlowScene {
-    fn duration(&self) -> Duration<'_> { Duration::Seconds(4.0) }
+    fn duration(&self) -> Duration<'_> { Duration::Seconds(3.0) }
     fn render_frame<'a>(&'a self, frame: Frame, _ctx: &FFramesContext<'a, '_>) -> Svgr<'a> {
         let t = frame.seconds();
 
@@ -764,7 +847,7 @@ impl Scene for FlowScene {
 #[derive(Debug)]
 struct ConstellationScene;
 impl Scene for ConstellationScene {
-    fn duration(&self) -> Duration<'_> { Duration::Seconds(4.0) }
+    fn duration(&self) -> Duration<'_> { Duration::Seconds(3.0) }
     fn render_frame<'a>(&'a self, frame: Frame, _ctx: &FFramesContext<'a, '_>) -> Svgr<'a> {
         let t = frame.seconds();
 
@@ -827,13 +910,13 @@ impl Scene for ConstellationScene {
 }
 
 // =========================================================================
-// 11. Export (3.5s)
+// 11. Export (3.5s) — 7 种格式按场景动态出现
 // =========================================================================
 
 #[derive(Debug)]
 struct ExportScene;
 impl Scene for ExportScene {
-    fn duration(&self) -> Duration<'_> { Duration::Seconds(4.5) }
+    fn duration(&self) -> Duration<'_> { Duration::Seconds(3.5) }
     fn render_frame<'a>(&'a self, frame: Frame, _ctx: &FFramesContext<'a, '_>) -> Svgr<'a> {
         let formats = [
             ("07-export-srt.png", "SRT 字幕"),
@@ -861,7 +944,202 @@ impl Scene for ExportScene {
 }
 
 // =========================================================================
-// 12. HostsIntro (2.0s) — quick three-host triptych
+// 12. M3Content (4.0s) — 搜索 / 标签 / AI 历史 内容管理三件套(v0.3.5)
+// =========================================================================
+
+#[derive(Debug)]
+struct M3ContentScene;
+impl Scene for M3ContentScene {
+    fn duration(&self) -> Duration<'_> { Duration::Seconds(4.0) }
+    fn render_frame<'a>(&'a self, frame: Frame, _ctx: &FFramesContext<'a, '_>) -> Svgr<'a> {
+        let title_op = ramp(&frame, 0.2);
+
+        // Left phone: plaza with tags (m3-tags.png)
+        let left_op = ramp(&frame, 0.35);
+        let left_sc = scale_pop(&frame, 0.35);
+        // Center phone: plaza with search active (m3-search.png) + typing-in-progress
+        let center_op = ramp(&frame, 0.55);
+        let center_sc = scale_pop(&frame, 0.55);
+        // Right phone: AI history card (synthesized SVG)
+        let right_op = ramp(&frame, 0.75);
+        let right_sc = scale_pop(&frame, 0.75);
+
+        let ph_w = 480.0; let ph_h = 540.0;
+        let lx = 80.0;  let ly = 240.0;
+        let cx = 720.0;  let cy = 200.0;
+        let rx = 1360.0; let ry = 240.0;
+
+        let search_t = frame.seconds();
+        let type_progress = ((search_t - 1.5) / 1.5).clamp(0.0, 1.0);
+        static QUERY: &[&str] = &["日", "落", "日 落", "日 落 之", "日 落 之 城", "日 落 之 城 ·"];
+        let typed: &str = QUERY[(type_progress * (QUERY.len() as f32 - 0.01)) as usize];
+
+        // Build search overlay group separately (svgr macro can't host if-else)
+        let search_overlay: Svgr = if type_progress > 0.0 {
+            fframes::svgr!(<g>
+                <rect x="32" y="442" width="416" height="42" rx="21" fill="#fff" stroke={ORANGE} stroke-width="2" />
+                <text x="48" y="468" font-size="16" fill="#1c1c1e" font-family="Arial Unicode MS">{typed}<tspan fill={ORANGE}>{"▏"}</tspan></text>
+            </g>)
+        } else {
+            fframes::svgr!(<g />)
+        };
+
+        // Build AI history card body separately
+        static HIST: &[(&str, &str)] = &[
+            ("起标题",   "海浪不着急,所以每天都好看"),
+            ("风格迁移", "散文 / 干货 / 小红书 / 知乎"),
+            ("摘要",     "把三天假期过成一个月..."),
+        ];
+        let mut hist_parts: Vec<Svgr> = Vec::new();
+        hist_parts.push(fframes::svgr!(<g font-family={FONT} font-weight={WEIGHT}>
+            <rect x="24" y="24" width={ph_w - 48.0} height="60" rx="10" fill="#fff" stroke="#f0d9c4" stroke-width="1" />
+            <text x="40" y="50" font-size="14" font-weight="700" fill="#1c1c1e">{"AI 历史 · 最近 3 条"}</text>
+            <text x="40" y="72" font-size="11" fill="#8e8e93">{"夏日海边慢生活"}</text>
+        </g>));
+        for (i, (label, body)) in HIST.iter().enumerate() {
+            let yy = 100.0 + i as f32 * 90.0;
+            hist_parts.push(fframes::svgr!(<g font-family={FONT} font-weight={WEIGHT}>
+                <rect x="24" y={yy} width={ph_w - 48.0} height="78" rx="10" fill="#fff" stroke="#e6dccf" stroke-width="1" />
+                <rect x="24" y={yy} width="4" height="78" rx="2" fill="#ff6b35" />
+                <text x="40" y={yy + 22.0} font-size="12" font-weight="700" fill="#ff6b35">{*label}</text>
+                <text x="40" y={yy + 42.0} font-size="12" fill="#1c1c1e">{*body}</text>
+                <text x="40" y={yy + 62.0} font-size="10" fill="#8e8e93">{"↳ class:fast · 已存"}</text>
+            </g>));
+        }
+
+        fframes::svgr!(<g font-family={FONT} font-weight={WEIGHT}>
+            <text x="960" y="120" text-anchor="middle" font-size="42" font-weight="700" fill={INK} opacity={title_op}>{"M3 · 内容管理三件套"}</text>
+            <text x="960" y="160" text-anchor="middle" font-size="19" fill={INK_SOFT} opacity={title_op}>{"搜索 · 标签 · AI 历史 · 全部本地"}</text>
+
+            // Left: plaza + tags
+            <g opacity={left_op} transform={format!("translate({} {}) scale({})", lx + ph_w/2.0, ly + ph_h/2.0, left_sc * 0.78)}>
+                <g transform={format!("translate({} {})", -ph_w/2.0, -ph_h/2.0)}>
+                    <rect x="-8" y="-8" width={ph_w + 16.0} height={ph_h + 16.0} rx="34" fill="#080808" />
+                    <rect x="0" y="0" width={ph_w} height={ph_h} rx="28" fill="#faf6f1" />
+                    <image href="m3-tags.png" x="0" y="0" width={ph_w} height={ph_h} preserveAspectRatio="xMidYMid slice" />
+                </g>
+            </g>
+            <text x={lx + ph_w*0.78/2.0} y={690.0} text-anchor="middle" font-size="16" font-weight="700" fill={ORANGE} opacity={left_op}>{"① 标签筛选 · 按 #chip 过滤作品"}</text>
+
+            // Center: search + live typing
+            <g opacity={center_op} transform={format!("translate({} {}) scale({})", cx + ph_w/2.0, cy + ph_h/2.0, center_sc * 0.78)}>
+                <g transform={format!("translate({} {})", -ph_w/2.0, -ph_h/2.0)}>
+                    <rect x="-8" y="-8" width={ph_w + 16.0} height={ph_h + 16.0} rx="34" fill="#080808" />
+                    <rect x="0" y="0" width={ph_w} height={ph_h} rx="28" fill="#faf6f1" />
+                    <image href="m3-search.png" x="0" y="0" width={ph_w} height={ph_h} preserveAspectRatio="xMidYMid slice" />
+                    {search_overlay}
+                </g>
+            </g>
+            <text x={cx + ph_w*0.78/2.0} y={690.0} text-anchor="middle" font-size="16" font-weight="700" fill={ORANGE} opacity={center_op}>{"② 广场搜索 · 即时过滤标题/原文"}</text>
+
+            // Right: AI history (synthesized SVG)
+            <g opacity={right_op} transform={format!("translate({} {}) scale({})", rx + ph_w/2.0, ry + ph_h/2.0, right_sc * 0.78)}>
+                <g transform={format!("translate({} {})", -ph_w/2.0, -ph_h/2.0)}>
+                    <rect x="-8" y="-8" width={ph_w + 16.0} height={ph_h + 16.0} rx="34" fill="#080808" />
+                    <rect x="0" y="0" width={ph_w} height={ph_h} rx="28" fill="#faf6f1" />
+                    {hist_parts}
+                </g>
+            </g>
+            <text x={rx + ph_w*0.78/2.0} y={690.0} text-anchor="middle" font-size="16" font-weight="700" fill={ORANGE} opacity={right_op}>{"③ AI 历史 · 每篇最近 3 条"}</text>
+
+            <rect width="1920" height="1080" fill={BG} opacity={dip_in(&frame)} />
+        </g>)
+    }
+}
+
+// =========================================================================
+// 13. AiAssistant (3.5s) — model 助手 7 项(v0.4.0)
+// =========================================================================
+
+#[derive(Debug)]
+struct AiAssistantScene;
+impl Scene for AiAssistantScene {
+    fn duration(&self) -> Duration<'_> { Duration::Seconds(3.5) }
+    fn render_frame<'a>(&'a self, frame: Frame, _ctx: &FFramesContext<'a, '_>) -> Svgr<'a> {
+        let title_op = ramp(&frame, 0.2);
+        let _panel_op = ramp(&frame, 0.4);
+        let _panel_sc = scale_pop(&frame, 0.4);
+
+        // 7 项 AI 助手
+        static ITEMS: &[(&str, &str, &str)] = &[
+            ("起标题",     "schema:title",  "auto"),
+            ("关键词",     "{keywords:[]}", "fast"),
+            ("摘要",       "{summary}",     "fast"),
+            ("风格迁移",   "4 风格",        "fast"),
+            ("中英对照",   "{zh,en}",       "fast"),
+            ("标题打分",   "0-100",         "fast"),
+            ("模型预算",   "今日剩余",       "sys"),
+        ];
+
+        let card_w = 232.0f32;
+        let card_h = 130.0f32;
+        let gap_x = 18.0f32;
+        let gap_y = 22.0f32;
+        let x0 = (1920.0 - (card_w * 4.0 + gap_x * 3.0)) / 2.0;
+        let y0 = 350.0f32;
+
+        let card_svgs: Vec<Svgr> = ITEMS.iter().enumerate().map(|(i, (name, schema, cls))| {
+            let col = (i % 4) as f32;
+            let row = (i / 4) as f32;
+            let st = 0.4 + i as f32 * 0.06;
+            let op = ramp(&frame, st);
+            let sc = scale_pop(&frame, st);
+            let x = x0 + col * (card_w + gap_x);
+            let y = y0 + row * (card_h + gap_y);
+            fframes::svgr!(<g font-family={FONT} font-weight={WEIGHT} opacity={op} transform={format!("translate({} {}) scale({})", x, y, sc)}>
+                <rect width={card_w} height={card_h} rx="14" fill={BG_CARD} stroke={ORANGE} stroke-width="1.2" />
+                <rect x="0" y="0" width="6" height={card_h} rx="3" fill={ORANGE} />
+                <text x="22" y="28" font-size="11" letter-spacing="2" fill={ORANGE}>{"AI ASSISTANT"}</text>
+                <text x="22" y="60" font-size="22" font-weight="700" fill={INK}>{*name}</text>
+                <text x="22" y="86" font-size="11" fill={INK_SOFT}>{*schema}</text>
+                <rect x="22" y={card_h - 30.0} width="50" height="18" rx="9" fill="#141821" stroke={PIPE} stroke-width="1" />
+                <text x="47" y={card_h - 18.0} text-anchor="middle" font-size="10" fill={INK_SOFT}>{*cls}</text>
+            </g>)
+        }).collect();
+
+        // 右侧合成示意:输入原文 → 一键调用 → 输出
+        let flow_op = ramp(&frame, 1.2);
+        let out_x = 280.0f32;
+
+        fframes::svgr!(<g font-family={FONT} font-weight={WEIGHT}>
+            <text x="960" y="120" text-anchor="middle" font-size="42" font-weight="700" fill={INK} opacity={title_op}>{"AI 助手 · 工坊屏 7 项"}</text>
+            <text x="960" y="160" text-anchor="middle" font-size="19" fill={INK_SOFT} opacity={title_op}>{"一键调用 model.complete · schema 强制 · fast 类"}</text>
+
+            {card_svgs}
+
+            <g opacity={flow_op}>
+                <text x="960" y="700" text-anchor="middle" font-size="16" fill={INK_SOFT}>{"原文 / 一句话 → 一键调用 → 结构化输出,可直接填回计划编辑器"}</text>
+                <g transform={format!("translate({} 770)", out_x)}>
+                    <rect x="0" y="0" width="380" height="56" rx="10" fill={BG_CARD} stroke={PIPE} stroke-width="1" />
+                    <text x="20" y="24" font-size="13" fill={ORANGE}>{"原文"}</text>
+                    <text x="20" y="46" font-size="13" fill={INK_SOFT}>{"你有多久没看完一场日落了"}</text>
+                </g>
+                <g transform={format!("translate({} 770)", out_x + 410.0)}>
+                    <rect x="0" y="0" width="60" height="56" rx="10" fill={ORANGE} opacity="0.2" />
+                    <text x="30" y="34" text-anchor="middle" font-size="22" fill={ORANGE}>{"→"}</text>
+                </g>
+                <g transform={format!("translate({} 770)", out_x + 490.0)}>
+                    <rect x="0" y="0" width="60" height="56" rx="10" fill={ORANGE} />
+                    <text x="30" y="38" text-anchor="middle" font-size="18" font-weight="700" fill="#fff">{"AI"}</text>
+                </g>
+                <g transform={format!("translate({} 770)", out_x + 570.0)}>
+                    <rect x="0" y="0" width="60" height="56" rx="10" fill={ORANGE} opacity="0.2" />
+                    <text x="30" y="34" text-anchor="middle" font-size="22" fill={ORANGE}>{"→"}</text>
+                </g>
+                <g transform={format!("translate({} 770)", out_x + 650.0)}>
+                    <rect x="0" y="0" width="380" height="56" rx="10" fill={BG_CARD} stroke={ORANGE} stroke-width="1.5" />
+                    <text x="20" y="24" font-size="13" fill={ORANGE}>{"输出"}</text>
+                    <text x="20" y="46" font-size="13" fill={INK}>{"8 个候选标题 · 推荐指数 · 一键填入"}</text>
+                </g>
+            </g>
+
+            <rect width="1920" height="1080" fill={BG} opacity={dip_in(&frame)} />
+        </g>)
+    }
+}
+
+// =========================================================================
+// 14. HostsIntro (1.5s) — quick three-host triptych
 // =========================================================================
 
 #[derive(Debug)]
@@ -876,7 +1154,7 @@ impl Scene for HostsIntroScene {
             let st = 0.25 + i as f32 * 0.12;
             let op = ramp(&frame, st);
             let sc = scale_pop(&frame, st);
-            let deg = (-12.0 + i as f32 * 12.0);
+            let deg = -12.0 + i as f32 * 12.0;
             let cx = 960.0 + (i as f32 - 1.0) * 320.0;
             fframes::svgr!(<g font-family={FONT} font-weight={WEIGHT} opacity={op}
                 transform={format!("translate({} 580) rotate({}) scale({})", cx, deg, sc)}>
@@ -904,12 +1182,13 @@ impl Scene for HostsIntroScene {
 #[derive(Debug)]
 struct HostsDesktopScene;
 impl Scene for HostsDesktopScene {
-    fn duration(&self) -> Duration<'_> { Duration::Seconds(4.0) }
+    fn duration(&self) -> Duration<'_> { Duration::Seconds(3.5) }
     fn render_frame<'a>(&'a self, frame: Frame, _ctx: &FFramesContext<'a, '_>) -> Svgr<'a> {
         let title_op = ramp(&frame, 0.2);
         let shell_op = ramp(&frame, 0.4);
         let shell_sc = scale_pop(&frame, 0.4);
-        let cap_op   = ramp(&frame, 1.5);
+        let badge_op = ramp(&frame, 1.2);
+        let cap_op   = ramp(&frame, 2.0);
 
         // Shell mockup — scaled-down screenshot framed as a window
         let win_w = 960.0_f32;
@@ -933,6 +1212,14 @@ impl Scene for HostsDesktopScene {
                 </g>
             </g>
 
+            // AI 已连接 badge — 右下角
+            <g opacity={badge_op} transform={format!("translate({} {})", cx + win_w * 0.36, cy + win_h * 0.45)}>
+                <rect x="-12" y="-22" width="170" height="44" rx="22" fill="#0a0c11" stroke="#3aa867" stroke-width="1.5" />
+                <circle cx="6" cy="0" r="6" fill="#3aa867" />
+                <circle cx="6" cy="0" r="3" fill="#fff" />
+                <text x="22" y="6" font-size="14" font-weight="700" fill="#7fd0a8">{"AI 已连接"}</text>
+            </g>
+
             <text x="960" y="912" text-anchor="middle" font-size="16" fill={INK_SOFT} opacity={cap_op}>{"作品存设备沙箱 · 跨设备不离开你的控制"}</text>
             <rect width="1920" height="1080" fill={BG} opacity={dip_in(&frame)} />
         </g>)
@@ -946,7 +1233,7 @@ impl Scene for HostsDesktopScene {
 #[derive(Debug)]
 struct HostsCardScene;
 impl Scene for HostsCardScene {
-    fn duration(&self) -> Duration<'_> { Duration::Seconds(4.0) }
+    fn duration(&self) -> Duration<'_> { Duration::Seconds(3.5) }
     fn render_frame<'a>(&'a self, frame: Frame, _ctx: &FFramesContext<'a, '_>) -> Svgr<'a> {
         let title_op = ramp(&frame, 0.2);
         let mob_op = ramp(&frame, 0.35);
@@ -955,6 +1242,7 @@ impl Scene for HostsCardScene {
         let mob_sc = scale_pop(&frame, 0.35);
         let tab_sc = scale_pop(&frame, 0.55);
         let dsk_sc = scale_pop(&frame, 0.75);
+        let badge_op = ramp(&frame, 1.4);
 
         // Phone (left): 824x1606 source → display ~280x546
         let mob_w = 280.0; let mob_h = 546.0;
@@ -1013,6 +1301,13 @@ impl Scene for HostsCardScene {
             </g>
             <text x={dsk_x + dsk_w/2.0} y={dsk_y + dsk_h + 50.0} text-anchor="middle" font-size="16" fill={INK_SOFT} opacity={dsk_op}>{"桌面 1280×800"}</text>
 
+            // AI 仅声明 badge — 中下
+            <g opacity={badge_op} transform={format!("translate({} {})", 960.0, 940.0)}>
+                <rect x="-180" y="-22" width="360" height="44" rx="22" fill="#0a0c11" stroke="#c98bde" stroke-width="1.5" />
+                <circle cx="-156" cy="0" r="6" fill="#c98bde" />
+                <text x="-138" y="6" font-size="14" font-weight="700" fill="#c98bde">{"card-host · AI 仅声明,未连接"}</text>
+            </g>
+
             <rect width="1920" height="1080" fill={BG} opacity={dip_in(&frame)} />
         </g>)
     }
@@ -1025,7 +1320,7 @@ impl Scene for HostsCardScene {
 #[derive(Debug)]
 struct HostsRinxScene;
 impl Scene for HostsRinxScene {
-    fn duration(&self) -> Duration<'_> { Duration::Seconds(4.0) }
+    fn duration(&self) -> Duration<'_> { Duration::Seconds(3.5) }
     fn render_frame<'a>(&'a self, frame: Frame, _ctx: &FFramesContext<'a, '_>) -> Svgr<'a> {
         let title_op = ramp(&frame, 0.2);
         let import_op = ramp(&frame, 0.4);
@@ -1201,7 +1496,8 @@ impl Scene for OutroScene {
             <rect x={start_x - 30.0} y={line_y + 22.0} width={total_w + 60.0} height="3" fill={ORANGE} opacity={0.55 * ramp(&frame, 2.1)} />
             <rect x={start_x - 30.0} y={line_y + 22.0} width={total_w + 60.0} height="8" fill={ORANGE} opacity={0.18 * ramp(&frame, 2.1)} />
             <g opacity={info_op}>
-                <text x="960" y="730" text-anchor="middle" font-size="15" fill={INK_SOFT}>{"Rinx · OctoSense App Hub · Apache-2.0 · v0.3.3"}</text>
+                <text x="960" y="710" text-anchor="middle" font-size="15" fill={INK_SOFT}>{"Rinx · OctoSense App Hub · Apache-2.0 · v0.4.3"}</text>
+                <text x="960" y="740" text-anchor="middle" font-size="13" fill={ORANGE} opacity="0.85">{"10 主题 · 5 视频预设 · M3 内容管理 · AI 助手 7 项"}</text>
             </g>
             <rect width="1920" height="1080" fill={BG} opacity={fade} />
         </g>)
