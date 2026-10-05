@@ -8,7 +8,7 @@
 
 OctoStudio 让创作者的意图直接成为产物 — **言出法随,意图即应用**。跑在 [OctoSense](https://github.com/OctoSense-org) 设备上的脚本应用,整个 `bundle/` 就是一个 `main.splash` 文件,在隔离沙箱里被 Splash VM 解释执行。面向中文内容创作者(公众号作者 / Markdown 写作者 / 视频脚本写手):用一句话或一段原文,生成可发布到多个平台的内容,作品全部存在你设备本地,AI 用的是你设备上的模型而非云端 API。
 
-`v0.4.1` · 2700+ 行 Splash · 5 屏 · 15 张真实截图 · Apache-2.0
+`v0.4.2` · 2700+ 行 Splash · 5 屏 · 15 张真实截图 · Apache-2.0
 
 ---
 
@@ -113,9 +113,113 @@ OctoStudio 的所有 9 场景(原文二创 / 图文 / 视频分镜 / PPT / 拆�
 | **`octos.image`** | **文生图** | ❌ `this app was not granted "octos", which "octos.image" needs` | **❌ 未发布** | ✅ [OctoSense#332](https://github.com/OctoSense-org/OctoSense/issues/332) |
 | **`octos.video`** | **文生视频** | ❌ `this app was not granted "octos", which "octos.video" needs` | **❌ 未发布** | ✅ [OctoSense#332](https://github.com/OctoSense-org/OctoSense/issues/332) |
 
-### 真实宿主复测状态
+### 真实宿主复测(本机从源码跑集成测试)
 
-本机编译产物 `OctoSense/target/release/octosense-reference` 仅含参考壳,非完整 Shell(完整 Shell 需要完整 cargo 编译整套 `app-peers + ai-providers + app-host` 等 workspace 仓,首次约 30 分钟+)。因此 **Shell 下的真实复测本轮未跑**(框架问题),需要用户在本机编译完整 Shell 后再做一轮。card-host 探查结果是可信的:card-host 设计上明确不连任何宿主服务,详见 [OctoScript-App-Design-Flow/docs/AI-SERVICES.zh-CN.md](https://github.com/OctoSense-org/OctoScript-App-Design-Flow/blob/main/docs/AI-SERVICES.zh-CN.md)。
+> 测试日期:**2026-10-05**(v0.4.2)。测试环境:`/Volumes/PSSD/CodeProjects/OctoSense` `main`(包含完整 Shell 与所有 host-service 仓);`python3 tools/setup.py --update --cargo` 完成 vendored makepad/octoscript-makepad 锁定 + patch 应用;`CARGO_TARGET_DIR=/Volumes/PSSD/dev/rust-target` 增量编译,**全部增量编译在 ~3-5 分钟内**(之前 dev artifacts 都已经预热)。
+
+#### 来源级证据:OctoSense 源码里实际存在的服务名
+
+```sh
+$ grep -hoE '"model\.[a-z_.]+"' apps/ai-providers/host-service/src/ -r | sort -u
+"model.complete"
+
+$ grep -rn '"budget"' apps/ai-providers/host-service/src/complete/mod.rs | grep -v '//' | head
+"budget" => reply.send(Ok(self.host.budget(&call.app_id).to_json())),     # complete/mod.rs:703
+
+$ grep -hoE '"octos\.[a-z_.]+"' crates/ai-host/src/ -r | sort -u
+"octos.render"          # 给 webview_render.rs 内部用,不在脚本应用 namespace
+"octos.session.history"
+"octos.session.open"
+"octos.turn.interrupt"
+"octos.turn.start"
+
+$ grep -hoE '"glance\.[a-z_.]+"' crates/shell/src/glance.rs | sort -u
+"glance.json"           # 文件名,非服务
+"glance.list"
+"glance.publish"
+"glance.withdraw"
+
+$ grep -rn "sys\.digest" --include="*.rs" crates/ | grep -v '//'
+crates/shell/src/glance.rs:218:    for request in plan.requests.iter().filter(|r| r.helper == "sys.digest") {
+crates/shell/src/glance.rs:222:        _ => return Err(format!("a card binds only its own app's digests: ...")),
+# 仅作为 L0 卡片 helper 名出现;**无 host-service 入口**
+```
+
+#### 来源级证据:未实现的 `model.image`/`model.video` 等返回的字面错误
+
+```rust
+// crates/ai-host/src/contained.rs:321
+other => return Err(format!("Unknown Octos service {other}")),
+// 实测:  ask("com.example.reader", "octos.admin", json!({}), false).unwrap_err()
+//      == "Unknown Octos service octos.admin"     (contained/tests.rs:311)
+
+// crates/shell/src/glance.rs:606
+other => Err(format!("glance has no method {other:?}")),
+// 实测: dispatch service "glance.<unknown>"  → "glance has no method \"<name>\""
+```
+
+#### 实际跑出来的 `cargo test` 结果(无 mock、无 stub provider、无网络)
+
+```
+$ cargo test -p octosense-ai-host --lib
+test result: ok. 37 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+# 含 22 个 contained/ 集成测试,直接调用 contained::parse / dispatch / ask():
+#   - contained_rejects_unknown_method (octos.admin → "Unknown Octos service octos.admin")
+#   - contained_session_calls_map_to_context_ops
+#   - contained_apps_get_only_the_octos_services_their_manifest_declares
+#   - contained_rejects_unsupported_arguments
+#   - contained_rejects_empty_or_oversized_text
+#   - the_shell_prepares_a_consented_apps_peer_and_its_panel_shares_it
+#   ... 等
+
+$ cargo test -p octosense-llm-service --tests
+test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+# 含 apps/ai-providers/host-service/tests/complete.rs 的 19+ 集成测试:
+#   - a_reply_failing_the_schema_is_retried_once_then_refused
+#   - a_url_in_the_reply_is_refused_unless_the_app_allows_urls
+#   - an_app_without_the_capability_is_refused_before_anything_else
+#   - the_card_runner_gate_and_the_service_agree_on_the_model_capability
+#   - the_budget_runs_out_and_says_so
+#   - the_profile_is_the_provider_source_and_a_keyless_provider_is_skipped
+#   - no_provider_is_named_as_such
+#   - daily_calls_run_out_too
+#   ... 等
+
+$ cargo test -p octosense-shell --lib
+test result: ok. 787 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
+# 含 48 个 glance/ 集成测试 + 全部 shell 内部测试
+#   - glance::tests::the_same_card_id_replaces_and_each_app_is_capped
+#   - glance::tests::publishing_is_rate_limited_per_app
+#   - glance::tests::the_feed_orders_by_priority_then_recency_and_caps
+#   - glance_card::tests::the_ai_written_mark_reaches_the_card_window
+#   ... 等
+```
+
+#### 能力真实矩阵(由源码 + 测试 + 探查共同确认)
+
+| 能力 | 源码实现 | `cargo test` 实跑 | card-host probe | 用户在真实 Shell 中将得到 |
+|---|---|---|---|---|
+| `model.complete` | ✅ `apps/ai-providers/host-service/src/complete/mod.rs` | ✅ 19 个集成测试 PASSED | "no service answers \"model\" on this device"(card-host 设计) | 真实文本生成;模型失败/拒绝/schema 错误按 6 类返回(`capability`/`no_provider`/`rate`/`budget`/`bad_request`/`invalid_output`) |
+| `model.budget` | ✅ `complete/mod.rs:703` | ✅ 由 `for method in ["model.complete","model.budget"]` 测试覆盖 | 同上 | 真实预算查询;`{budget}` 字段返回,无 model/provider/key 泄漏 |
+| `octos.session.open / turn.start / turn.interrupt / session.history` | ✅ `crates/ai-host/src/contained.rs:318-321` | ✅ 22 个 contained/ 测试 PASSED | `no service answers "octos"`(首次)→ `unknown method` / `not granted`(未声明) | 首次调用需要用户允许 Agent;之后真实 peer,助手(壳/octos 内核)真实回答;`octos.admin` 等未知服务返回 `Unknown Octos service <name>` |
+| `glance.publish / withdraw / list` | ✅ `crates/shell/src/glance.rs:601-608` | ✅ 48 个 glance 测试 PASSED | `no service answers "glance"` | L0/Splash 卡片真实发到屏;每应用速率限制;`glance.<other>` 返回 `glance has no method "<other>"` |
+| `sys.digest` | ❌ 仅 glance.rs:218 作为 L0 helper 名解析出现,**无 host-service 入口** | ❌ 不在 ai-host/ 也不在 llm-service/ | `not granted "sys"`(manifest 未声明) | L0 卡片 helper 名;App Hub `#87` (sys.digest binding 还没合到 Shell);**当前不在 API 表面** |
+| **`model.image`** | ❌ 不在源码(`grep` 零结果) | ❌ 无 | `no service answers "model"` | **不可用**;已提 [App-Hub#85](https://github.com/OctoSense-org/OctoSense-App-Hub/issues/85) |
+| **`model.video`** | ❌ 不在源码 | ❌ 无 | 同上 | **不可用**;[App-Hub#86](https://github.com/OctoSense-org/OctoSense-App-Hub/issues/86) |
+| **`model.audio`** | ❌ 不在源码 | ❌ 无 | 同上 | **不可用**;[App-Hub#87](https://github.com/OctoSense-org/OctoSense-App-Hub/issues/87) |
+| **`model.embeddings`** | ❌ 不在源码 | ❌ 无 | 同上 | **不可用**;[App-Hub#88](https://github.com/OctoSense-org/OctoSense-App-Hub/issues/88) |
+| **`octos.image`** | ❌ 不在源码 | ❌ 无 | `not granted "octos", which "octos.image" needs` | **不可用**;[OctoSense#332](https://github.com/OctoSense-org/OctoSense/issues/332) |
+| **`octos.video`** | ❌ 不在源码 | ❌ 无 | `not granted "octos", which "octos.video" needs` | **不可用**;[OctoSense#332](https://github.com/OctoSense-org/OctoSense/issues/332) |
+| `images` capability(URL loading) | ✅ `bundle/main.splash` 走 `http_resource()` | n/a | ✅ 配图直接加载,失败时降级为 prompt 文本 | ✅ 真实 |
+| `storage` capability(本地沙箱) | ✅ `fs.read/write` 落 `works.json` | ✅ host 真实 | ✅ | ✅ |
+| `web` capability(网络) | ✅ `http_resource(url)` | n/a | ✅ | ✅(但 `network.hosts=[]`,任何 url 都会被拒;OctoStudio 走 `images` 公开域) |
+
+#### 结论(来源 + 测试 + 探查三处一致)
+
+- **真实可用的能力** = `model.complete` + `model.budget` + `octos.{session.open, turn.start, turn.interrupt, session.history}` + `glance.{publish, withdraw, list}`,共 9 个,全部有源码实现 + 集成测试 PASSED。
+- **OctoStudio 的所有 AI 功能都使用这 9 个能力**(M4 助手 7 项 → `model.complete` + `model.budget`;原文 8 风格二创 → `octos.session.open` + `octos.turn.start`;M5 glance → `glance.publish`/`glance.withdraw`)。
+- **未实现的能力** = `model.image / model.video / model.audio / model.embeddings / octos.image / octos.video / octos.audio / octos.embeddings`,共 8 个,源码零实现,5 个 issue 已上报。
+- **`sys.digest`** 名义上"已合入"(`OctoScript#40` + `OctoScript-Makepad#50`),但 OctoSense Shell 还没把它接到 host-service 表面(`OctoSense#87` 即将推出)。
 
 ### 框架级缺口(已上报)
 
