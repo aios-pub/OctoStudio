@@ -4,11 +4,15 @@
 
 <!-- 视频介绍(60s @ 30fps,18 景精确 60s · v0.4.3 全品类:10 主题 / 5 视频预设 / M3 内容管理 / AI 助手 7 项 / 3 宿主真实运行) -->
 <p align="center">
-  <video src="https://raw.githubusercontent.com/aios-pub/OctoStudio/main/assets/promo-v10.mp4" controls preload="metadata" width="960"><a href="https://raw.githubusercontent.com/aios-pub/OctoStudio/main/assets/promo-v10.mp4">▶️ 播放 60s promo (14.9 MB)</a></video>
+  <video width="960" controls preload="metadata" playsinline>
+    <source src="https://raw.githubusercontent.com/aios-pub/OctoStudio/main/assets/promo-v10-preview.webm" type="video/webm">
+    <source src="https://raw.githubusercontent.com/aios-pub/OctoStudio/main/assets/promo-v10.mp4" type="video/mp4">
+    <a href="https://github.com/aios-pub/OctoStudio/raw/main/assets/promo-v10.mp4">▶️ 播放 60s promo (14.9 MB)</a>
+  </video>
 </p>
 
 <p align="center">
-  <sub>🎬 <a href="https://github.com/aios-pub/OctoStudio/raw/main/assets/promo-v10.mp4">下载 60s 完整版 (14.9 MB)</a> · 源工程 <a href="promo/">promo/</a> (fframes · Skia · 1920×1080 @ 30fps)</sub>
+  <sub>🎬 <a href="https://github.com/aios-pub/OctoStudio/raw/main/assets/promo-v10.mp4">下载完整 1080p (14.9 MB)</a> · 内嵌 720p WebM 3.3 MB · 源工程 <a href="promo/">promo/</a> (fframes · Skia · 1920×1080 @ 30fps)</sub>
 </p>
 
 一句话,就是一篇文。
