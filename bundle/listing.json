@@ -38,7 +38,7 @@
     "support": "mailto:amos@aios.pub",
     "privacy_policy_url": "https://aios.pub/privacy"
   },
-  "release_notes": "v0.3.3:看门狗 timer 句柄修复(0.3.2 的 stop_timer(0) 异常);生成慢响应 >70s 自动复位可重试;AI 环境状态文案清理。",
+  "release_notes": "v0.3.3:修 card-host 下状态栏误标 AI 已就绪(cardhost 实际不连 octos/model);状态栏显式标注当前宿主与 AI 真实状态,详情指向 INTEGRATION.md;README/INTEGRATION 加三宿主能力矩阵(OctoSense 桌面壳 ✅ / Rinx 小程序 ⚠️ / card-host ❌)。",
   "age_rating": "all",
   "license": "Apache-2.0"
 }
