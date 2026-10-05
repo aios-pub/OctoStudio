@@ -13,7 +13,6 @@
 
 <p align="center">
   <sub>▶️ <a href="https://www.bilibili.com/video/BV1MZHW6MEWZ/" target="_blank">哔哩哔哩观看【OctoStudio 功能介绍】</a>
-  · <a href="https://github.com/aios-pub/OctoStudio/blob/main/assets/promo-v10.mp4" target="_blank">GitHub 播放 1080p</a>
   · ⬇️ <a href="https://github.com/aios-pub/OctoStudio/raw/main/assets/promo-v10.mp4">下载 MP4 (14.9 MB)</a>
   · 18 景精确 60.000s @ 30fps</sub>
 </p>
