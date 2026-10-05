@@ -8,7 +8,7 @@
 
 OctoStudio 让创作者的意图直接成为产物 — **言出法随,意图即应用**。跑在 [OctoSense](https://github.com/OctoSense-org) 设备上的脚本应用,整个 `bundle/` 就是一个 `main.splash` 文件,在隔离沙箱里被 Splash VM 解释执行。面向中文内容创作者(公众号作者 / Markdown 写作者 / 视频脚本写手):用一句话或一段原文,生成可发布到多个平台的内容,作品全部存在你设备本地,AI 用的是你设备上的模型而非云端 API。
 
-`v0.3.0` · 2138 行 Splash · 5 屏 · 10 张真实截图 · Apache-2.0
+`v0.3.5` · 2435 行 Splash · 5 屏 · 14 张真实截图 · Apache-2.0
 
 ---
 
@@ -80,7 +80,10 @@ OctoStudio 的所有 9 场景(原文二创 / 图文 / 视频分镜 / PPT / 拆�
 | 12 | **多格式导出** — Markdown / 公众号 / Notion / Marp / SRT / 制作包 / markmap,按场景动态出现 | 纯文本转换 | [`07`–`09`](bundle/screenshots/07-export-srt.png) |
 | 13 | **本地作品库** — 分类图标/相对时间/长按删除,存设备沙箱;v0.2 数据自动迁移 | `storage` | [`01`](bundle/screenshots/01-plaza.png) |
 | 14 | **降级完备** — 任何 AI 服务不可用 → 填入演示内容,仍可编辑保存,失败原因原样显示 | `host.has()` + 预置 demo | 全程 |
-| 15 | **宣传片 / 宣传图** *(规划中)* — 初赛路演与商店展示物料(片源工程在 `promo/` 迭代中) | 工具链 | 规划中 |
+| 15 | **广场搜索** *(v0.3.5)* — 顶部搜索框,实时过滤作品标题/原文关键词(`on_change`) | 纯本地 | `screenshots/15-search.png` |
+| 16 | **标签筛选** *(v0.3.5)* — 标签 chips 从已有作品聚合;生成时按场景/风格自动打标签;点 chip 过滤作品 | 纯本地 | `screenshots/16-tags.png` |
+| 17 | **AI 历史** *(v0.3.5)* — 每篇作品最近 3 条 `{prompt, result}`,卡片可展开查看 | 纯本地 | `screenshots/17-history.png` |
+| 18 | **宣传片 / 宣传图** *(规划中)* — 初赛路演与商店展示物料(片源工程在 `promo/` 迭代中) | 工具链 | 规划中 |
 
 未来规划(见 [`ROADMAP.md`](ROADMAP.md)):个人风格工坊、主题网络抓取、拟人化文章生成、glance 卡片分发。
 
@@ -178,7 +181,8 @@ OctoStudio 用到的 OctoSense 平台能力(声明在 `bundle/manifest.json`):
 |---|---|---|
 | M0 / M1 意图创作 + 多格式导出 | v0.2.0 | ✅ 已落地 |
 | M2 创作者工作流补齐 | v0.2.x | ✅ 已落地 |
-| M3 场景广场(9 生成场景 + 通用编辑器 + 主题样式 + 制作包/Marp/markmap) | v0.3.0 | ✅ 已落地(本轮) |
+| M3 场景广场(9 生成场景 + 通用编辑器 + 主题样式 + 制作包/Marp/markmap) | v0.3.0 | ✅ 已落地 |
+| M3' 内容管理(搜索 / 标签筛选 / AI 历史) | v0.3.5 | ✅ 已落地(本轮) |
 | M3+ 个人风格工坊 + 主题网络抓取 | v0.3.x | 规划中 |
 | M4 `model.complete` 高阶用法 | v0.4.0 | 部分提前落地(标题 / 合成建议 / 拆解) |
 | M5 拟人化文章生成 | v0.4.0 | 规划中 |
@@ -599,9 +603,89 @@ hub check /Volumes/PSSD/CodeProjects/octostudio/bundle \
 git tag octostudio-0.2.0 && git push origin octostudio-0.2.0
 
 # 6. 在 OctoSense-App-Hub 开 issue
-#    标题:Submit octostudio 0.2.0
+#    标题:Submit octostudio 0.X.Y
 #    附:tag、commit、bundle 路径、publisher 公钥、check 输出、REVIEW-ANSWERS.md
 ```
+
+### v0.3.3 提交流程(publisher `aios.pub`,2026-10-05 实测通过)
+
+完整记录在 `build/ISSUE-SUBMIT-0.3.3.md`,顺序是:**bundle 修改 → stamp → sign → 重发本地 mirror → commit & tag → push → 更新 issue**。任何一步之后改了 bundle 都要回到第一步重做。
+
+```sh
+APP=/Volumes/PSSD/CodeProjects/octostudio
+HUB=/Volumes/PSSD/dev/rust-target/release/hub
+KEYS=$APP/build/keys
+M=$APP/build/mirror
+KEY=~/.octosense/aios.pub-publisher.key            # publisher 私钥
+PUBKEY=$($HUB pubkey $KEY)                          # 当前值 c02572b30ef0c38a…
+
+# 1. stamp(把 bundle_blake3 写入 manifest)
+$HUB stamp bundle
+
+# 2. sign(用 aios.pub 密钥签 manifest)
+$HUB sign-manifest bundle --key $KEY --key-id aios.pub
+
+# 3. 签名自检(通过表示 signature value 与 manifest 字节一致)
+$HUB check bundle --publisher-key "aios.pub=$PUBKEY"
+# 期望: octostudio 0.3.3 — PASSED
+
+# 4. 重发本地 mirror(写入 build/mirror/catalog.json + anchor.hex)
+ANCHOR=$($HUB pubkey $KEYS/anchor.key)
+CERT=$($HUB certify --anchor $KEYS/anchor.key --working $KEYS/working.key)
+$HUB publish bundle --catalog $M/catalog.json \
+  --key $KEYS/working.key --anchor-cert "$CERT" \
+  --publisher aios.pub \
+  --publisher-key "aios.pub=$PUBKEY" \
+  --repo https://github.com/aios-pub/OctoStudio.git \
+  --commit "$(git -C $APP rev-parse HEAD)" --out $M
+$HUB verify $M/catalog.json --anchor "$ANCHOR"
+echo $ANCHOR > $APP/build/anchor.hex
+
+# 5. commit 本地变更(分支名带 publisher,清晰)
+git checkout -b v0.3.3-aios.pub
+git add bundle/ README.md INTEGRATION.md REVIEW-ANSWERS.md ROADMAP.md
+git commit -m "v0.3.3-aios.pub: ..."
+git tag octostudio-0.3.3                              # lightweight tag
+
+# 6. push 到 aios-pub/OctoStudio
+# 6a. 正常网络:
+git push origin v0.3.3-aios.pub --follow-tags
+# 6b. 443 超时(macOS Clash 网关常见):走 gh api,见下面"GitHub 推送变通"
+```
+
+> ⚠️ **签名严格不可逆** —— manifest 改了就要重签;本地 catalog 用了就不要再重签旧 digest。
+
+### GitHub 推送变通(`git push` 443 超时时)
+
+`gh api` 直连 GitHub 是不走 git 协议的,不受 443 timeout 影响。完整脚本见 `~/.zcode/cli/memories/projects/octostudio-69a6319f7f84b652/memory/github-push-via-gh-api.md`,核心步骤:
+
+```python
+# 1) POST /git/blobs(逐文件 base64)
+# 2) POST /git/trees(递归建子树)
+# 3) POST /git/commits(parent = 远端 main 当前 SHA,tree = 新 root)
+# 4) POST /git/refs(branch + lightweight tag)
+```
+
+GitHub 侧重建的 commit SHA 与本地不同(时间戳格式差异),但 **tree SHA 完全一致**(因为 blobs + tree 是逐字段构造的)。验证:
+```
+gh api repos/aios-pub/OctoStudio/branches/v0.3.3-aios.pub
+gh api repos/aios-pub/OctoStudio/tags
+```
+
+### 当前 v0.3.3 远端状态(已推送)
+
+| 项 | 值 |
+|---|---|
+| Issue | [#73 — Submit octostudio 0.3.3 (publisher: aios.pub)](https://github.com/OctoSense-org/OctoSense-App-Hub/issues/73) |
+| Tag | [`octostudio-0.3.3`](https://github.com/aios-pub/OctoStudio/tree/octostudio-0.3.3) → `0e63cf1fb25c` |
+| Branch | [`v0.3.3-aios.pub`](https://github.com/aios-pub/OctoStudio/tree/v0.3.3-aios.pub) |
+| Local commit | `f76afe0`(本地) — 同 tree (`ce4a1fab267d`)、作者、时间戳 |
+| Bundle digest | `0d81c8a5409f8d9fe58d66fc27574232ab4af914093d703d7342b9279bea14e2` |
+| Publisher pubkey | `c02572b30ef0c38a56de97b909fe6fbb419212ea3d8723d0b0342b7737394c02` |
+| hub check | `octostudio 0.3.3 — PASSED`(`hub check bundle --publisher-key aios.pub=…`) |
+| Local mirror | `catalog sequence 1 verified, 1 entries`(`build/mirror/anchor.hex = 96f4f77f…`) |
+
+Reviewer 在 hub 完成注册后,可走 route **human-review**(与 v0.1.0 / v0.3.0 一致)。`REVIEW-ANSWERS.md` 已随 commit 推送。
 
 签名之后任何修改都要重新 stamp + 签名。
 
@@ -627,6 +711,7 @@ git tag octostudio-0.2.0 && git push origin octostudio-0.2.0
 
 ## 相关链接
 
+- [App Hub issue #73 — Submit octostudio 0.3.3 (publisher: aios.pub)](https://github.com/OctoSense-org/OctoSense-App-Hub/issues/73) — 当前提交工单(已含 tag、commit、bundle 信息、publisher 公钥)
 - [`OctoScript-App-Design-Flow`](https://github.com/OctoSense-org/OctoScript-App-Design-Flow) — 工具链与文档
 - [`OctoSense-App-Hub`](https://github.com/OctoSense-org/OctoSense-App-Hub) — `hub` / `card-host` / 商店
 - [`docs/SCRIPT-API.md`](https://github.com/OctoSense-org/OctoScript-App-Design-Flow/blob/main/docs/SCRIPT-API.md) — Splash 语言 + 全部 API
