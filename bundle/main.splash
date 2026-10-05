@@ -1,4 +1,4 @@
-// OctoStudio — 一句话,就是一次创作 (v0.3.5)
+// OctoStudio — 一句话,就是一次创作 (v0.4.3)
 // 场景广场:原文二创 / 图文 / 视频分镜 / PPT / 拆解视频 / 标题 / 小红书 / 口播 / 导图 / 金句
 // 通用计划编辑器(增删改排) · 文章主题样式 10 款 · 视频风格预设 · AI 合成建议
 // 多格式导出:Markdown / 公众号 / Notion / Marp / SRT 字幕 / 视频制作包 / markmap
@@ -1558,7 +1558,7 @@ fn ai_gen_title(){
             title: {type: "string" maxLength: 40}
             alternatives: {type: "array" minItems: 2 maxItems: 4 items: {type: "string" maxLength: 40}}
         }}
-    host.request("model.complete", {task: "为用户给的中文文章/笔记/原文起一个有吸引力、不超过 40 字的标题,另给 2-4 个候选。" instructions: "不要带引号,直接给中文标题。" input: {source: current_source} schema: schema output: {class: "fast" temperature: 0.6 max_tokens: 400 allow_urls: false}}, fn(r){
+    host.request("model.complete", {task: "为用户给的中文文章/笔记/原文起一个有吸引力、不超过 40 字的标题,另给 2-4 个候选。不要带引号,直接给中文标题。" input: {source: current_source} schema: schema class: "fast" allow_urls: false}, fn(r){
         if !r.is_ok || r.data == nil {
             status_text = "起标题失败: " + r.error
             ui.status.set_text(status_text)
@@ -1594,7 +1594,7 @@ fn ai_extract_keywords(){
         properties: {
             keywords: {type: "array" minItems: 3 maxItems: 8 items: {type: "string" maxLength: 12}}
         }}
-    host.request("model.complete", {task: "从用户给的中文文本中提取 3-8 个关键词,字数不超过 12 字。" instructions: "返回 JSON 数组,中文逗号不要。" input: {source: current_source} schema: schema output: {class: "fast" temperature: 0.3 max_tokens: 200 allow_urls: false}}, fn(r){
+    host.request("model.complete", {task: "从用户给的中文文本中提取 3-8 个关键词,字数不超过 12 字。返回 JSON 数组,中文逗号不要。" input: {source: current_source} schema: schema class: "fast" allow_urls: false}, fn(r){
         if !r.is_ok || r.data == nil {
             status_text = "提关键词失败: " + r.error
             ui.status.set_text(status_text)
@@ -1633,7 +1633,7 @@ fn ai_summarize(){
             summary: {type: "string" maxLength: 200}
             key_points: {type: "array" minItems: 2 maxItems: 5 items: {type: "string" maxLength: 60}}
         }}
-    host.request("model.complete", {task: "为用户给的中文文本写 100 字以内的摘要,并给 2-4 条要点(每条不超过 60 字)。" instructions: "保留核心结论,不要泛泛。" input: {source: current_source} schema: schema output: {class: "fast" temperature: 0.4 max_tokens: 400 allow_urls: false}}, fn(r){
+    host.request("model.complete", {task: "为用户给的中文文本写 100 字以内的摘要,并给 2-4 条要点(每条不超过 60 字)。保留核心结论,不要泛泛。" input: {source: current_source} schema: schema class: "fast" allow_urls: false}, fn(r){
         if !r.is_ok || r.data == nil {
             status_text = "摘要失败: " + r.error
             ui.status.set_text(status_text)
@@ -1676,7 +1676,7 @@ fn ai_style_variants(){
                         body: {type: "string" maxLength: 400}
                     }}}
         }}
-    host.request("model.complete", {task: "把用户给的中文原文改写成 4 种风格对照稿:学术 / 口语 / 公文 / 营销。" instructions: "保留事实,只换风格。每稿不超过 400 字。" input: {source: current_source} schema: schema output: {class: "fast" temperature: 0.7 max_tokens: 2000 allow_urls: false}}, fn(r){
+    host.request("model.complete", {task: "把用户给的中文原文改写成 4 种风格对照稿:学术 / 口语 / 公文 / 营销。保留事实,只换风格。每稿不超过 400 字。" input: {source: current_source} schema: schema class: "fast" allow_urls: false}, fn(r){
         if !r.is_ok || r.data == nil {
             status_text = "风格迁移失败: " + r.error
             ui.status.set_text(status_text)
@@ -1712,7 +1712,7 @@ fn ai_translate_zh_en(){
             zh: {type: "string" maxLength: 600}
             en: {type: "string" maxLength: 600}
         }}
-    host.request("model.complete", {task: "把用户给的中文文本翻译成自然、地道的英文,并给一版精修的中文。" instructions: "保留专业术语,中文精修版要流畅。" input: {source: current_source} schema: schema output: {class: "fast" temperature: 0.3 max_tokens: 1500 allow_urls: false}}, fn(r){
+    host.request("model.complete", {task: "把用户给的中文文本翻译成自然、地道的英文,并给一版精修的中文。保留专业术语,中文精修版要流畅。" input: {source: current_source} schema: schema class: "fast" allow_urls: false}, fn(r){
         if !r.is_ok || r.data == nil {
             status_text = "翻译失败: " + r.error
             ui.status.set_text(status_text)
@@ -1745,7 +1745,7 @@ fn ai_score_title(){
             score: {type: "integer" minimum: 0 maximum: 100}
             suggestions: {type: "array" minItems: 2 maxItems: 4 items: {type: "string" maxLength: 60}}
         }}
-    host.request("model.complete", {task: "给用户给的中文标题打分(0-100),并给 2-4 条改进建议(每条不超过 60 字)。" instructions: "维度:吸引力 / 清晰度 / 与原文的相关性。" input: {title: title_v source: current_source} schema: schema output: {class: "fast" temperature: 0.3 max_tokens: 400 allow_urls: false}}, fn(r){
+    host.request("model.complete", {task: "给用户给的中文标题打分(0-100),并给 2-4 条改进建议(每条不超过 60 字)。维度:吸引力 / 清晰度 / 与原文的相关性。" input: {title: title_v source: current_source} schema: schema class: "fast" allow_urls: false}, fn(r){
         if !r.is_ok || r.data == nil {
             status_text = "打分失败: " + r.error
             ui.status.set_text(status_text)
@@ -1782,15 +1782,7 @@ fn ai_budget(){
             return
         }
         let d = r.data
-        let out = "今日剩余: "
-        let keys = ["remaining_today" "remaining" "tokens_remaining" "calls_remaining"]
-        let i = 0
-        for k in keys {
-            if i > 0 { out = out + " · " }
-            let v = d[k]
-            if v != nil { out = out + k + "=" + v.to_string() } else { out = out + k + "=—" }
-            i = i + 1
-        }
+        let out = "今日已用: 调用 " + sval(d["calls_today"]) + "/" + sval(d["calls_per_day"]) + " · token " + sval(d["tokens_today"]) + "/" + sval(d["tokens_per_day"]) + " · 剩 token " + sval(d["tokens_left"]) + " · 每分钟限 " + sval(d["per_minute"])
         budget_text = out
         budget_last_ts = bump_seq()
         ai_panel_result = out

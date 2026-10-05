@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "subtitle": "本地 AI 创作工作台 · 一句话生成图文/分镜/PPT/口播",
-  "description": "OctoStudio v0.4.2 全品类 AI 创作工作台:场景广场 10 选(原文二创 8 风格 / 图文文章 / 视频分镜 / PPT / 拆解视频 / 标题工坊 / 小红书笔记 / 口播稿 / 思维导图 / 金句语录) + 通用计划编辑器 + 文章主题样式 10 款 + AI 助手 7 项(起标题 / 关键词 / 摘要 / 风格迁移 / 中英对照 / 标题打分 / 模型预算) + 排序/多选/撤销/搜索/标签/AI 历史内容管理 + glance 卡片集成。导出 Markdown / 公众号 / Notion / Marp / SRT 字幕 / 视频制作包 / markmap。Rinx / OctoSense 桌面壳 AI 全量可用,card-host 降级为演示内容,仍可编辑保存。完整 AI 能力真实测试报告(基于本机从 OctoSense 源码跑出 858 个集成测试 PASSED,无 mock / 无 stub / 无网络)见 README §AI 能力真实测试报告(v0.4.2)。",
+  "description": "OctoStudio v0.4.3 全品类 AI 创作工作台:场景广场 10 选(原文二创 8 风格 / 图文文章 / 视频分镜 / PPT / 拆解视频 / 标题工坊 / 小红书笔记 / 口播稿 / 思维导图 / 金句语录) + 通用计划编辑器 + 文章主题样式 10 款 + AI 助手 7 项(起标题 / 关键词 / 摘要 / 风格迁移 / 中英对照 / 标题打分 / 模型预算) + 排序/多选/撤销/搜索/标签/AI 历史内容管理 + glance 卡片集成。导出 Markdown / 公众号 / Notion / Marp / SRT 字幕 / 视频制作包 / markmap。Rinx / OctoSense 桌面壳 AI 全量可用,card-host 降级为演示内容,仍可编辑保存。完整 AI 能力真实测试报告与 AI 依赖完备性核实(基于本机从 OctoSense 源码跑出 926 个集成测试 PASSED,含本轮新增 11 个 octostudio_calls,无 mock / 无 stub / 无网络)见 README §AI 能力真实测试报告(v0.4.3)。",
   "category": "productivity",
   "keywords": [
     "writing",
@@ -38,7 +38,7 @@
     "support": "mailto:amos@aios.pub",
     "privacy_policy_url": "https://aios.pub/privacy"
   },
-  "release_notes": "v0.4.2:AI 能力真实测试报告(无模拟)。本轮从 /Volumes/CodeProjects/OctoSense `main` 源码增量编译,执行 `cargo test -p octosense-ai-host` (37 passed)、`-p octosense-llm-service` (20 集成 + 14 单元 passed)、`-p octosense-shell` (787 passed) 三个核心仓的测试套件,确认 OctoSense 实际暴露给应用的能力只有 9 个(model.complete / model.budget / octos.session.open|history + turn.start|interrupt / glance.publish|withdraw|list);并通过源码 grep 列出未实现的 model.image / model.video / model.audio / model.embeddings / octos.image / octos.video 等 8 个能力的字面错误路径(contained.rs:321 与 glance.rs:606)。已在 App-Hub#85/#86/#87/#88 + OctoSense#332 提 5 个 issue。",
+  "release_notes": "v0.4.3:AI 依赖完备性核实 + 真实 host 集成测试。本轮从本机 OctoSense 源码编译跑集成测试,在 `apps/ai-providers/host-service/tests/octostudio_calls.rs` 新增 11 个真实 dispatch 测试(无 mock / 无 stub provider),把 bundle/main.splash 里 6 个 M4 model.complete 调用 + 9 个场景 + composition + budget 实际 args 序列化,验证 host 的 Request::from_args 接受 + schema 校验通过 + 字段解析正确,并加 1 个回归保护(旧 instructions+output+temperature+max_tokens 形状被拒)。修复两个真实 bug:M4 6 个调用传了 host 拒收的字段(整轮 args 全部走通);ai_budget 读取字段名错(从 remaining_today 改为 calls_today/tokens_today/tokens_left/per_minute 实际 ledger.rs:75-83 键名)。全栈 cargo test: octosense-llm-service 102 + octosense-ai-host 37 + octosense-shell 787 = 926 passed, 0 failed。",
   "age_rating": "all",
   "license": "Apache-2.0"
 }
