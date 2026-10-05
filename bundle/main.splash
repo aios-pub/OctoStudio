@@ -38,6 +38,16 @@ let active_tag = ""
 let known_tags = []
 let history_open_id = ""
 let first_run_seeded = false
+let sort_mode = "updated_desc"
+let select_mode = false
+let selected_ids = []
+let undo_stack = []
+let undo_max = 5
+let copy_status = ""
+let ai_panel_result = ""
+let glance_published = []
+let budget_text = ""
+let budget_last_ts = 0
 
 let ink = #x1c1c1e
 let secondary = #x8e8e93
@@ -656,6 +666,220 @@ fn history_lines(items){
     return out
 }
 
+// ---------- 排序 / 多选 / 撤销 / 复制 ----------
+
+fn sorted_works(){
+    let list = filtered_works()
+    if sort_mode == "updated_asc" {
+        // 早存
+        let sorted = []
+        for w in list { sorted.push(w) }
+        let n = sorted.len()
+        for i in 48 {
+            if i + 1 < n {
+                let mi = i
+                for j in 48 {
+                    if i + j + 1 < n {
+                        let a = sorted[mi]
+                        let b = sorted[i + j + 1]
+                        let sa = (if a["updated"] != nil {a["updated"]} else {0})
+                        let sb = (if b["updated"] != nil {b["updated"]} else {0})
+                        if sb < sa { mi = i + j + 1 }
+                    }
+                }
+                if mi != i {
+                    let tmp = sorted[i]
+                    sorted[i] = sorted[mi]
+                    sorted[mi] = tmp
+                }
+            }
+        }
+        return sorted
+    }
+    if sort_mode == "kind" {
+        // 按场景分组
+        let sorted = []
+        for k in SCENARIOS {
+            let kid = k["id"]
+            for w in list {
+                let wk = (if w["plan_kind"] != nil {w["plan_kind"]} else {""})
+                if wk == kid { sorted.push(w) }
+            }
+        }
+        let rem = []
+        for w in list {
+            let wk = (if w["plan_kind"] != nil {w["plan_kind"]} else {""})
+            let seen = false
+            for k in SCENARIOS {
+                if k["id"] == wk { seen = true }
+            }
+            if !seen { rem.push(w) }
+        }
+        for w in rem { sorted.push(w) }
+        return sorted
+    }
+    // updated_desc default — 早存
+    let sorted = []
+    for w in list { sorted.push(w) }
+    let n = sorted.len()
+    for i in 48 {
+        if i + 1 < n {
+            let mi = i
+            for j in 48 {
+                if i + j + 1 < n {
+                    let a = sorted[mi]
+                    let b = sorted[i + j + 1]
+                    let sa = (if a["updated"] != nil {a["updated"]} else {0})
+                    let sb = (if b["updated"] != nil {b["updated"]} else {0})
+                    if sb > sa { mi = i + j + 1 }
+                }
+            }
+            if mi != i {
+                let tmp = sorted[i]
+                sorted[i] = sorted[mi]
+                sorted[mi] = tmp
+            }
+        }
+    }
+    return sorted
+}
+
+fn toggle_sort(m){
+    sort_mode = m
+    ui.sort_row.render()
+    ui.works_list.render()
+}
+
+fn toggle_select_mode(){
+    select_mode = !select_mode
+    if !select_mode { selected_ids = [] }
+    ui.works_list.render()
+    ui.select_bar.render()
+}
+
+fn toggle_select_one(id){
+    let found_idx = -1
+    let n = selected_ids.len()
+    for i in 32 {
+        if i < n {
+            if selected_ids[i] == id { found_idx = i }
+        }
+    }
+    let kept = []
+    if found_idx >= 0 {
+        for i in 32 {
+            if i < n && i != found_idx { kept.push(selected_ids[i]) }
+        }
+    } else {
+        for i in 32 {
+            if i < n { kept.push(selected_ids[i]) }
+        }
+        kept.push(id)
+    }
+    selected_ids = kept
+    ui.works_list.render()
+    ui.select_bar.render()
+}
+
+fn is_selected(id){
+    for s in selected_ids {
+        if s == id { return true }
+    }
+    return false
+}
+
+fn select_all_visible(){
+    let v = sorted_works()
+    let ids = []
+    for w in v { ids.push(w["id"]) }
+    selected_ids = ids
+    ui.works_list.render()
+    ui.select_bar.render()
+}
+
+fn clear_selection(){
+    selected_ids = []
+    ui.works_list.render()
+    ui.select_bar.render()
+}
+
+fn batch_delete_selected(){
+    if selected_ids.len() == 0 { return }
+    let kept = []
+    for w in works {
+        let drop = false
+        for s in selected_ids {
+            if w["id"] == s { drop = true }
+        }
+        if !drop { kept.push(w) }
+    }
+    works = kept
+    selected_ids = []
+    select_mode = false
+    save_works()
+    rebuild_known_tags()
+    ui.tag_row.render()
+    ui.sort_row.render()
+    ui.select_bar.render()
+    ui.works_list.render()
+}
+
+fn push_undo(snap){
+    undo_stack.push(snap)
+    let n = undo_stack.len()
+    if n > undo_max {
+        let trimmed = []
+        for i in 32 {
+            if i >= n - undo_max { trimmed.push(undo_stack[i]) }
+        }
+        undo_stack = trimmed
+    }
+}
+
+fn pop_undo(){
+    if undo_stack.len() == 0 {
+        status_text = "没有可撤销的快照"
+        ui.status.set_text(status_text)
+        return
+    }
+    let snap = undo_stack[undo_stack.len() - 1]
+    let trimmed = []
+    let n = undo_stack.len()
+    for i in 32 {
+        if i < n - 1 { trimmed.push(undo_stack[i]) }
+    }
+    undo_stack = trimmed
+    if snap == "title" {
+        ui.title_input.set_text(current_title)
+        status_text = "已恢复标题快照"
+    } else if snap == "source" {
+        ui.source_input.set_text(current_source)
+        status_text = "已恢复原文快照"
+    } else if snap == "content" {
+        ui.content_input.set_text(current_content)
+        status_text = "已成稿恢复"
+    } else {
+        status_text = "快照类型未知"
+    }
+    ui.status.set_text(status_text)
+}
+
+fn copy_to_clipboard(text){
+    // 写新值
+    copy_status = "已复制 " + text.len().to_string() + " 字符"
+    // splash 提供 host.request("clipboard.write", ...) 在未来可用;当前回填 UI Label
+}
+
+fn select_all_export(){
+    // 跳转后调用 export_body Label 的「全部选中」 — splash Label 无 select_all API
+    // 回退:拼接纯文本到粘贴板提示
+    let txt = render_plan_as_text()
+    copy_to_clipboard(txt)
+    status_text = "导出文本已生成 " + txt.len().to_string() + " 字 · 手选全选后复制"
+    ui.status.set_text(status_text)
+    ui.copy_status_label.set_text(copy_status)
+}
+
 fn start_scenario(id){
     plan_kind = id
     current_id = new_id()
@@ -1267,6 +1491,314 @@ fn load_demo_plan(){
         current_plan_items = demo_quotes_items()
         return
     }
+}
+
+// ---------- M5: glance 卡片 ----------
+
+fn glance_publish_current(){
+    if current_id == "" {
+        status_text = "没有可发布的作品"
+        ui.status.set_text(status_text)
+        return
+    }
+    busy = true
+    status_text = "发布到 glance..."
+    ui.status.set_text(status_text)
+    let card_data = {kind: (if plan_kind == "" {"raw"} else {plan_kind}) title: current_title summary: current_plan_summary prompt: current_prompt source: current_source items: current_plan_items style: current_style theme: current_theme preset: current_preset}
+    host.request("glance.publish", {data: card_data}, fn(r){
+        busy = false
+        if !r.is_ok {
+            status_text = "glance 发布失败: " + r.error
+            ui.status.set_text(status_text)
+            return
+        }
+        let entry = {id: "" title: current_title time: bump_seq()}
+        let id_v = r.data["id"]
+        if id_v != nil { entry["id"] = id_v.to_string() }
+        glance_published.push(entry)
+        status_text = "已发到 glance · " + current_title
+        ui.status.set_text(status_text)
+    })
+}
+
+fn glance_withdraw(id){
+    busy = true
+    status_text = "撤回 glance 卡片..."
+    ui.status.set_text(status_text)
+    host.request("glance.withdraw", {id: id}, fn(r){
+        busy = false
+        if !r.is_ok {
+            status_text = "撤回失败: " + r.error
+            ui.status.set_text(status_text)
+            return
+        }
+        let kept = []
+        for e in glance_published {
+            if sval(e["id"]) != id { kept.push(e) }
+        }
+        glance_published = kept
+        status_text = "已撤回 · " + id
+        ui.status.set_text(status_text)
+    })
+}
+
+// ---------- M4: model.complete 高阶用法 ----------
+
+fn ai_gen_title(){
+    if current_source == "" {
+        status_text = "原文为空,无法起标题"
+        ui.status.set_text(status_text)
+        return
+    }
+    busy = true
+    status_text = "起标题中…"
+    ui.status.set_text(status_text)
+    let schema = {type: "object" required: ["title" "alternatives"] additionalProperties: false
+        properties: {
+            title: {type: "string" maxLength: 40}
+            alternatives: {type: "array" minItems: 2 maxItems: 4 items: {type: "string" maxLength: 40}}
+        }}
+    host.request("model.complete", {task: "为用户给的中文文章/笔记/原文起一个有吸引力、不超过 40 字的标题,另给 2-4 个候选。" instructions: "不要带引号,直接给中文标题。" input: {source: current_source} schema: schema output: {class: "fast" temperature: 0.6 max_tokens: 400 allow_urls: false}}, fn(r){
+        if !r.is_ok || r.data == nil {
+            status_text = "起标题失败: " + r.error
+            ui.status.set_text(status_text)
+            busy = false
+            return
+        }
+        let title_v = "" + sval(r.data["title"])
+        let alts = r.data["alternatives"]
+        let out = "建议标题: " + title_v
+        if alts != nil {
+            for a in alts { out = out + "\n· " + sval(a) }
+        }
+        current_title = title_v
+        ui.title_input.set_text(title_v)
+        ai_panel_result = out
+        ui.ai_result_label.set_text(out)
+        status_text = "起标题完成 · " + now_label()
+        ui.status.set_text(status_text)
+        busy = false
+    })
+}
+
+fn ai_extract_keywords(){
+    if current_source == "" {
+        status_text = "原文为空,无法提取关键词"
+        ui.status.set_text(status_text)
+        return
+    }
+    busy = true
+    status_text = "提关键词中…"
+    ui.status.set_text(status_text)
+    let schema = {type: "object" required: ["keywords"] additionalProperties: false
+        properties: {
+            keywords: {type: "array" minItems: 3 maxItems: 8 items: {type: "string" maxLength: 12}}
+        }}
+    host.request("model.complete", {task: "从用户给的中文文本中提取 3-8 个关键词,字数不超过 12 字。" instructions: "返回 JSON 数组,中文逗号不要。" input: {source: current_source} schema: schema output: {class: "fast" temperature: 0.3 max_tokens: 200 allow_urls: false}}, fn(r){
+        if !r.is_ok || r.data == nil {
+            status_text = "提关键词失败: " + r.error
+            ui.status.set_text(status_text)
+            busy = false
+            return
+        }
+        let kws = r.data["keywords"]
+        let out = "关键词: "
+        if kws != nil {
+            let i = 0
+            for k in kws {
+                if i > 0 { out = out + "、" }
+                out = out + sval(k)
+                i = i + 1
+            }
+        }
+        ai_panel_result = out
+        ui.ai_result_label.set_text(out)
+        status_text = "关键词完成 · " + now_label()
+        ui.status.set_text(status_text)
+        busy = false
+    })
+}
+
+fn ai_summarize(){
+    if current_source == "" {
+        status_text = "原文为空,无法摘要"
+        ui.status.set_text(status_text)
+        return
+    }
+    busy = true
+    status_text = "摘要中…"
+    ui.status.set_text(status_text)
+    let schema = {type: "object" required: ["summary" "key_points"] additionalProperties: false
+        properties: {
+            summary: {type: "string" maxLength: 200}
+            key_points: {type: "array" minItems: 2 maxItems: 5 items: {type: "string" maxLength: 60}}
+        }}
+    host.request("model.complete", {task: "为用户给的中文文本写 100 字以内的摘要,并给 2-4 条要点(每条不超过 60 字)。" instructions: "保留核心结论,不要泛泛。" input: {source: current_source} schema: schema output: {class: "fast" temperature: 0.4 max_tokens: 400 allow_urls: false}}, fn(r){
+        if !r.is_ok || r.data == nil {
+            status_text = "摘要失败: " + r.error
+            ui.status.set_text(status_text)
+            busy = false
+            return
+        }
+        let summary_v = "" + sval(r.data["summary"])
+        let kps = r.data["key_points"]
+        let out = "摘要:\n" + summary_v + "\n\n要点:"
+        if kps != nil {
+            let i = 0
+            for k in kps {
+                out = out + "\n" + (i + 1).to_string() + ". " + sval(k)
+                i = i + 1
+            }
+        }
+        ai_panel_result = out
+        ui.ai_result_label.set_text(out)
+        status_text = "摘要完成 · " + now_label()
+        ui.status.set_text(status_text)
+        busy = false
+    })
+}
+
+fn ai_style_variants(){
+    if current_source == "" {
+        status_text = "原文为空,无法风格迁移"
+        ui.status.set_text(status_text)
+        return
+    }
+    busy = true
+    status_text = "风格迁移中…"
+    ui.status.set_text(status_text)
+    let schema = {type: "object" required: ["variants"] additionalProperties: false
+        properties: {
+            variants: {type: "array" minItems: 4 maxItems: 4
+                items: {type: "object" required: ["style" "body"] additionalProperties: false
+                    properties: {
+                        style: {type: "string" maxLength: 12}
+                        body: {type: "string" maxLength: 400}
+                    }}}
+        }}
+    host.request("model.complete", {task: "把用户给的中文原文改写成 4 种风格对照稿:学术 / 口语 / 公文 / 营销。" instructions: "保留事实,只换风格。每稿不超过 400 字。" input: {source: current_source} schema: schema output: {class: "fast" temperature: 0.7 max_tokens: 2000 allow_urls: false}}, fn(r){
+        if !r.is_ok || r.data == nil {
+            status_text = "风格迁移失败: " + r.error
+            ui.status.set_text(status_text)
+            busy = false
+            return
+        }
+        let vs = r.data["variants"]
+        let out = ""
+        if vs != nil {
+            for v in vs {
+                out = out + "【" + sval(v["style"]) + "】\n" + sval(v["body"]) + "\n\n"
+            }
+        }
+        ai_panel_result = out
+        ui.ai_result_label.set_text(out)
+        status_text = "风格迁移完成 · 4 稿 · " + now_label()
+        ui.status.set_text(status_text)
+        busy = false
+    })
+}
+
+fn ai_translate_zh_en(){
+    if current_source == "" {
+        status_text = "原文为空,无法翻译"
+        ui.status.set_text(status_text)
+        return
+    }
+    busy = true
+    status_text = "中英对照中…"
+    ui.status.set_text(status_text)
+    let schema = {type: "object" required: ["zh" "en"] additionalProperties: false
+        properties: {
+            zh: {type: "string" maxLength: 600}
+            en: {type: "string" maxLength: 600}
+        }}
+    host.request("model.complete", {task: "把用户给的中文文本翻译成自然、地道的英文,并给一版精修的中文。" instructions: "保留专业术语,中文精修版要流畅。" input: {source: current_source} schema: schema output: {class: "fast" temperature: 0.3 max_tokens: 1500 allow_urls: false}}, fn(r){
+        if !r.is_ok || r.data == nil {
+            status_text = "翻译失败: " + r.error
+            ui.status.set_text(status_text)
+            busy = false
+            return
+        }
+        let zh = sval(r.data["zh"])
+        let en = sval(r.data["en"])
+        let out = "中文精修:\n" + zh + "\n\nEnglish:\n" + en
+        ai_panel_result = out
+        ui.ai_result_label.set_text(out)
+        status_text = "中英对照完成 · " + now_label()
+        ui.status.set_text(status_text)
+        busy = false
+    })
+}
+
+fn ai_score_title(){
+    let title_v = current_title
+    if title_v == "" || title_v == "未命名作品" {
+        status_text = "请先填写作品标题"
+        ui.status.set_text(status_text)
+        return
+    }
+    busy = true
+    status_text = "打分中…"
+    ui.status.set_text(status_text)
+    let schema = {type: "object" required: ["score" "suggestions"] additionalProperties: false
+        properties: {
+            score: {type: "integer" minimum: 0 maximum: 100}
+            suggestions: {type: "array" minItems: 2 maxItems: 4 items: {type: "string" maxLength: 60}}
+        }}
+    host.request("model.complete", {task: "给用户给的中文标题打分(0-100),并给 2-4 条改进建议(每条不超过 60 字)。" instructions: "维度:吸引力 / 清晰度 / 与原文的相关性。" input: {title: title_v source: current_source} schema: schema output: {class: "fast" temperature: 0.3 max_tokens: 400 allow_urls: false}}, fn(r){
+        if !r.is_ok || r.data == nil {
+            status_text = "打分失败: " + r.error
+            ui.status.set_text(status_text)
+            busy = false
+            return
+        }
+        let sc = 0 + r.data["score"].to_string().to_f64()
+        let sg = r.data["suggestions"]
+        let out = "评分: " + sc.to_string() + " / 100\n建议:"
+        if sg != nil {
+            let i = 0
+            for s in sg {
+                out = out + "\n" + (i + 1).to_string() + ". " + sval(s)
+                i = i + 1
+            }
+        }
+        ai_panel_result = out
+        ui.ai_result_label.set_text(out)
+        status_text = "打分完成 · " + sc.to_string() + " 分 · " + now_label()
+        ui.status.set_text(status_text)
+        busy = false
+    })
+}
+
+fn ai_budget(){
+    busy = true
+    status_text = "查询预算…"
+    ui.status.set_text(status_text)
+    host.request("model.budget", {}, fn(r){
+        if !r.is_ok || r.data == nil {
+            status_text = "查询预算失败: " + r.error
+            ui.status.set_text(status_text)
+            busy = false
+            return
+        }
+        let d = r.data
+        let out = "今日剩余: "
+        let keys = ["remaining_today" "remaining" "tokens_remaining" "calls_remaining"]
+        let i = 0
+        for k in keys {
+            if i > 0 { out = out + " · " }
+            let v = d[k]
+            if v != nil { out = out + k + "=" + v.to_string() } else { out = out + k + "=—" }
+            i = i + 1
+        }
+        budget_text = out
+        budget_last_ts = bump_seq()
+        ai_panel_result = out
+        ui.ai_result_label.set_text(out)
+        status_text = "预算查询完成 · " + now_label()
+        ui.status.set_text(status_text)
+        busy = false
+    })
 }
 
 fn ask_scenario(){
@@ -2028,7 +2560,7 @@ root := SolidView{width: Fill height: Fill flow: Down padding: 16 spacing: 10 dr
                     }
                 }
             }
-            Label{width: Fill text: "本地创作工作台 · 一句话生成图文/分镜/PPT/口播等,导出至公众号 / Markdown / Notion / Marp。长按卡片删除。" draw_text.color: secondary draw_text.text_style.font_size: 11}
+Label{width: Fill text: "本地创作工作台 · 一句话生成图文/分镜/PPT/口播等,导出至公众号 / Markdown / Notion / Marp。长按卡片删除。" draw_text.color: secondary draw_text.text_style.font_size: 11}
             View{width: Fill height: Fit flow: Right spacing: 6 align: Align{y: 0.5}
                 search_input := TextInput{width: Fill height: 32 empty_text: "搜索作品标题 / 原文关键词…"
                     draw_bg +: {color: #xffffff color_hover: #xffffff color_focus: #xffffff color_empty: #xf5e6d2 border_radius: 8.0}
@@ -2038,9 +2570,45 @@ root := SolidView{width: Fill height: Fill flow: Down padding: 16 spacing: 10 dr
                     draw_bg +: {color: chip_bg color_hover: warm_hover border_radius: 15.0 border_size: 0.0}
                     draw_text +: {color: ink color_hover: ink}
                     draw_text.text_style.font_size: 10}
+                ButtonFlat{text: (if select_mode {"完成"} else {"多选"}) height: 30 padding: Inset{left: 10 right: 10} on_click: || toggle_select_mode()
+                    draw_bg +: {color: (if select_mode {danger} else {chip_bg}) color_hover: warm_hover border_radius: 15.0 border_size: 0.0}
+                    draw_text +: {color: (if select_mode {#xffffff} else {ink}) color_hover: ink}
+                    draw_text.text_style.font_size: 10}
+            }
+            sort_row := View{width: Fill height: Fit flow: Right spacing: 4
+                ButtonFlat{text: ("⇅ " + (if sort_mode == "updated_desc" {"最新"} else {"按时间"})) height: 24 padding: Inset{left: 8 right: 8}
+                    on_click: || toggle_sort("updated_desc")
+                    draw_bg +: {color: (if sort_mode == "updated_desc" {accent} else {chip_bg}) color_hover: warm_hover border_radius: 12.0 border_size: 0.0}
+                    draw_text +: {color: (if sort_mode == "updated_desc" {#xffffff} else {ink}) color_hover: ink}
+                    draw_text.text_style.font_size: 9}
+                ButtonFlat{text: "⇅ 最早" height: 24 padding: Inset{left: 8 right: 8}
+                    on_click: || toggle_sort("updated_asc")
+                    draw_bg +: {color: (if sort_mode == "updated_asc" {accent} else {chip_bg}) color_hover: warm_hover border_radius: 12.0 border_size: 0.0}
+                    draw_text +: {color: (if sort_mode == "updated_asc" {#xffffff} else {ink}) color_hover: ink}
+                    draw_text.text_style.font_size: 9}
+                ButtonFlat{text: "⇅ 按场景" height: 24 padding: Inset{left: 8 right: 8}
+                    on_click: || toggle_sort("kind")
+                    draw_bg +: {color: (if sort_mode == "kind" {accent} else {chip_bg}) color_hover: warm_hover border_radius: 12.0 border_size: 0.0}
+                    draw_text +: {color: (if sort_mode == "kind" {#xffffff} else {ink}) color_hover: ink}
+                    draw_text.text_style.font_size: 9}
+            }
+            select_bar := View{width: Fill height: Fit flow: Right spacing: 6 align: Align{y: 0.5}
+                Label{width: Fill text: ("已选 " + selected_ids.len().to_string() + " 项") draw_text.color: accent draw_text.text_style.font_size: 11 visible: select_mode}
+                ButtonFlat{text: "全选可见" height: 26 padding: Inset{left: 8 right: 8} on_click: || select_all_visible() visible: select_mode
+                    draw_bg +: {color: chip_bg color_hover: warm_hover border_radius: 13.0 border_size: 0.0}
+                    draw_text +: {color: ink color_hover: ink}
+                    draw_text.text_style.font_size: 9}
+                ButtonFlat{text: "清除选择" height: 26 padding: Inset{left: 8 right: 8} on_click: || clear_selection() visible: select_mode
+                    draw_bg +: {color: chip_bg color_hover: warm_hover border_radius: 13.0 border_size: 0.0}
+                    draw_text +: {color: ink color_hover: ink}
+                    draw_text.text_style.font_size: 9}
+                ButtonFlat{text: ("删除 " + selected_ids.len().to_string() + " 项") height: 26 padding: Inset{left: 10 right: 10} on_click: || batch_delete_selected() visible: (select_mode && selected_ids.len() > 0)
+                    draw_bg +: {color: danger color_hover: #xd66030 border_radius: 13.0 border_size: 0.0}
+                    draw_text +: {color: #xffffff color_hover: #xffffff}
+                    draw_text.text_style.font_size: 9}
             }
             works_list := View{width: Fill height: Fit flow: Down spacing: 10 on_render: || {
-                let visible = filtered_works()
+                let visible = sorted_works()
                 if visible.len() == 0 {
                     View{width: Fill height: 140 align: Align{x: 0.5 y: 0.5}
                         Label{text: (if works.len() == 0 {"还没有作品"} else {"没有匹配的作品"}) draw_text.color: ink draw_text.text_style.font_size: 15}
@@ -2056,42 +2624,14 @@ root := SolidView{width: Fill height: Fill flow: Down padding: 16 spacing: 10 dr
                     let stamp_v = (if w["updated"] != nil {w["updated"]} else {0})
                     let sub = style_v
                     if kind_v != "" { sub = kind_name(kind_v) }
-                    let tags_arr = (if w["tags"] != nil {w["tags"]} else {[]})
-                    let hist_arr = (if w["history"] != nil {w["history"]} else {[]})
                     GestureView{width: Fill height: Fit flow: Down spacing: 4 padding: Inset{top: 12 bottom: 12 left: 14 right: 14}
-                        draw_bg +: {color: #xffffff color_hover: card_bg border_radius: 10.0 border_size: 0.0}
+                        draw_bg +: {color: (if is_selected(w["id"]) {#xffe9d6} {#xffffff}) color_hover: card_bg border_radius: 10.0 border_size: (if is_selected(w["id"]) {2.0} {0.0})}
                         on_tap: |x, y| open_work(w["id"])
-                        on_long_press: |x, y| delete_work(w["id"])
                         View{width: Fill height: Fit flow: Right spacing: 8 align: Align{y: 0.5}
-                            Label{width: Fill text: title_v draw_text.color: ink draw_text.text_style.font_size: 17}
+                            Label{width: Fill text: (if select_mode { (if is_selected(w["id"]) {"☑ "} else {"☐ "}) + title_v } else {title_v}) draw_text.color: ink draw_text.text_style.font_size: 17}
                             Label{text: kind_emoji(kind_v) draw_text.color: secondary draw_text.text_style.font_size: 14}
                         }
                         Label{width: Fill text: (sub + " · 更新于 " + rel_time(stamp_v)) draw_text.color: secondary draw_text.text_style.font_size: 11}
-                        if tags_arr.len() > 0 {
-                            View{width: Fill height: Fit flow: Right spacing: 4
-                                for ti in 6 {
-                                    if ti < tags_arr.len() {
-                                        let tg = sval(tags_arr[ti])
-                                        Label{text: ("#" + tg) draw_text.color: accent draw_text.text_style.font_size: 10}
-                                    }
-                                }
-                            }
-                        }
-                        if hist_arr.len() > 0 {
-                            View{width: Fill height: Fit flow: Right spacing: 6 align: Align{y: 0.5}
-                                ButtonFlat{text: (if (history_open_id == w["id"]) {"收起历史"} else {history_summary(hist_arr)}) height: 24 padding: Inset{left: 8 right: 8}
-                                    on_click: || toggle_history(w["id"])
-                                    draw_bg +: {color: chip_bg color_hover: warm_hover border_radius: 12.0 border_size: 0.0}
-                                    draw_text +: {color: ink color_hover: ink}
-                                    draw_text.text_style.font_size: 9}
-                            }
-                            if history_open_id == w["id"] {
-                                View{width: Fill height: Fit flow: Down spacing: 2 padding: Inset{left: 6 right: 6 top: 4 bottom: 4}
-                                    draw_bg +: {color: #xfafafa color_hover: #xfafafa border_radius: 6.0 border_size: 0.0}
-                                    Label{width: Fill text: history_lines(hist_arr) draw_text.color: ink draw_text.text_style.font_size: 10}
-                                }
-                            }
-                        }
                     }
                     }
                 }
@@ -2227,6 +2767,16 @@ root := SolidView{width: Fill height: Fill flow: Down padding: 16 spacing: 10 dr
             ButtonFlat{text: "重试" height: 40 padding: Inset{left: 18 right: 18} on_click: || ask_ai() visible: (!busy)
                 draw_bg +: {color: chip_bg color_hover: warm_hover border_radius: 20.0 border_size: 0.0}
                 draw_text +: {color: ink color_hover: ink}}
+            View{width: Fill height: Fit flow: Right spacing: 6 align: Align{y: 0.5}
+                ButtonFlat{text: ("撤销(" + undo_stack.len().to_string() + ")") height: 32 padding: Inset{left: 12 right: 12} on_click: || pop_undo() visible: (undo_stack.len() > 0)
+                    draw_bg +: {color: chip_bg color_hover: warm_hover border_radius: 16.0 border_size: 0.0}
+                    draw_text +: {color: ink color_hover: ink}
+                    draw_text.text_style.font_size: 10}
+                ButtonFlat{text: "快照原文" height: 32 padding: Inset{left: 12 right: 12} on_click: || { push_undo("source"); status_text = "已快照原文,可保存后撤销"; ui.status.set_text(status_text) }
+                    draw_bg +: {color: chip_bg color_hover: warm_hover border_radius: 16.0 border_size: 0.0}
+                    draw_text +: {color: secondary color_hover: ink}
+                    draw_text.text_style.font_size: 10}
+            }
             title_input := TextInput{width: Fill height: 38 empty_text: current_title
                 draw_bg +: {color: #xffffff color_hover: #xffffff color_focus: #xffffff color_empty: #xf5e6d2 border_radius: 8.0}
                 draw_text +: {color: ink color_hover: ink color_focus: ink color_empty: secondary color_empty_hover: secondary}}
@@ -2242,12 +2792,47 @@ root := SolidView{width: Fill height: Fill flow: Down padding: 16 spacing: 10 dr
                 draw_bg +: {color: #xffffff color_hover: #xffffff color_focus: #xffffff color_empty: #xf5e6d2 border_radius: 8.0}
                 draw_text +: {color: ink color_hover: ink color_focus: ink color_empty: secondary color_empty_hover: secondary}}
             Label{width: Fill text: ("字数: 原文 " + word_count(current_source).to_string() + " · 成稿 " + word_count(current_content).to_string()) draw_text.color: secondary draw_text.text_style.font_size: 11}
+            View{width: Fill height: Fit flow: Down spacing: 4 padding: Inset{top: 8 bottom: 8 left: 12 right: 12}
+                draw_bg.color: card_bg draw_bg.border_radius: 8.0
+                Label{width: Fill text: "AI 助手(model 7 项)" draw_text.color: ink draw_text.text_style.font_size: 11}
+                View{width: Fill height: Fit flow: Right spacing: 4
+                    ButtonFlat{text: "起标题" height: 26 padding: Inset{left: 8 right: 8} on_click: || ai_gen_title() visible: (!busy)
+                        draw_bg +: {color: chip_bg color_hover: warm_hover border_radius: 13.0 border_size: 0.0}
+                        draw_text +: {color: ink color_hover: ink}
+                        draw_text.text_style.font_size: 9}
+                    ButtonFlat{text: "关键词" height: 26 padding: Inset{left: 8 right: 8} on_click: || ai_extract_keywords() visible: (!busy)
+                        draw_bg +: {color: chip_bg color_hover: warm_hover border_radius: 13.0 border_size: 0.0}
+                        draw_text +: {color: ink color_hover: ink}
+                        draw_text.text_style.font_size: 9}
+                    ButtonFlat{text: "摘要" height: 26 padding: Inset{left: 8 right: 8} on_click: || ai_summarize() visible: (!busy)
+                        draw_bg +: {color: chip_bg color_hover: warm_hover border_radius: 13.0 border_size: 0.0}
+                        draw_text +: {color: ink color_hover: ink}
+                        draw_text.text_style.font_size: 9}
+                    ButtonFlat{text: "风格迁移" height: 26 padding: Inset{left: 8 right: 8} on_click: || ai_style_variants() visible: (!busy)
+                        draw_bg +: {color: chip_bg color_hover: warm_hover border_radius: 13.0 border_size: 0.0}
+                        draw_text +: {color: ink color_hover: ink}
+                        draw_text.text_style.font_size: 9}
+                    ButtonFlat{text: "中英对照" height: 26 padding: Inset{left: 8 right: 8} on_click: || ai_translate_zh_en() visible: (!busy)
+                        draw_bg +: {color: chip_bg color_hover: warm_hover border_radius: 13.0 border_size: 0.0}
+                        draw_text +: {color: ink color_hover: ink}
+                        draw_text.text_style.font_size: 9}
+                    ButtonFlat{text: "标题打分" height: 26 padding: Inset{left: 8 right: 8} on_click: || ai_score_title() visible: (!busy)
+                        draw_bg +: {color: chip_bg color_hover: warm_hover border_radius: 13.0 border_size: 0.0}
+                        draw_text +: {color: ink color_hover: ink}
+                        draw_text.text_style.font_size: 9}
+                    ButtonFlat{text: "模型预算" height: 26 padding: Inset{left: 8 right: 8} on_click: || ai_budget() visible: (!busy)
+                        draw_bg +: {color: chip_bg color_hover: warm_hover border_radius: 13.0 border_size: 0.0}
+                        draw_text +: {color: ink color_hover: ink}
+                        draw_text.text_style.font_size: 9}
+                }
+                ai_result_label := Label{width: Fill text: ai_panel_result draw_text.color: ink draw_text.text_style.font_size: 11}
+            }
             }
             View{width: Fill height: Fit flow: Right spacing: 8 align: Align{y: 0.5}
                 ButtonFlat{text: "返回广场" height: 40 padding: Inset{left: 18 right: 18} on_click: || goto(0)
                     draw_bg +: {color: chip_bg color_hover: warm_hover border_radius: 20.0 border_size: 0.0}
                     draw_text +: {color: ink color_hover: ink}}
-                ButtonFlat{text: "保存作品" height: 40 padding: Inset{left: 18 right: 18} on_click: || { let t = ui.title_input.text(); current_title = (if t == "" {"未命名作品"} else {t}); current_content = ui.content_input.text(); upsert_and_save(); goto(0) }
+                ButtonFlat{text: "保存作品" height: 40 padding: Inset{left: 18 right: 18} on_click: || { push_undo("title"); push_undo("content"); let t = ui.title_input.text(); current_title = (if t == "" {"未命名作品"} else {t}); current_content = ui.content_input.text(); upsert_and_save(); goto(0) }
                     draw_bg +: {color: accent color_hover: #xff8866 border_radius: 20.0 border_size: 0.0}
                     draw_text +: {color: #xffffff color_hover: #xffffff}}
             }
@@ -2422,6 +3007,9 @@ root := SolidView{width: Fill height: Fill flow: Down padding: 16 spacing: 10 dr
                 export_body := Label{width: Fill text: render_plan_as_text() draw_text.color: ink draw_text.text_style.font_size: 14}
             }
             View{width: Fill height: Fit flow: Right spacing: 8 align: Align{y: 0.5}
+                ButtonFlat{text: "一键全选+复制" height: 40 padding: Inset{left: 18 right: 18} on_click: || select_all_export()
+                    draw_bg +: {color: accent color_hover: #xff8866 border_radius: 20.0 border_size: 0.0}
+                    draw_text +: {color: #xffffff color_hover: #xffffff}}
                 ButtonFlat{text: "返回广场" height: 40 padding: Inset{left: 18 right: 18} on_click: || goto(0)
                     draw_bg +: {color: chip_bg color_hover: warm_hover border_radius: 20.0 border_size: 0.0}
                     draw_text +: {color: ink color_hover: ink}}
@@ -2429,6 +3017,7 @@ root := SolidView{width: Fill height: Fill flow: Down padding: 16 spacing: 10 dr
                     draw_bg +: {color: accent color_hover: #xff8866 border_radius: 20.0 border_size: 0.0}
                     draw_text +: {color: #xffffff color_hover: #xffffff}}
             }
+            copy_status_label := Label{width: Fill text: copy_status draw_text.color: secondary draw_text.text_style.font_size: 11}
         }
     }
 }
