@@ -25,6 +25,7 @@ let current_preset = ""              // 视频风格预设 id
 let current_composition = nil        // 视频合成建议
 let images_on = true                 // 生图增强开关
 let editing_k = -1                  // 计划编辑器:正在编辑条目的 _k 键,-1 关闭
+let status_detail = ""              // 状态栏副标题:对当前 AI 能力的解释(跨宿主)
 let busy = false
 let gen_timer = nil                 // 生成看门狗:慢响应超 70s 时复位 busy,避免卡死
 let status_text = "就绪"
@@ -1750,20 +1751,53 @@ fn goto(m){
     if m == 4 { refresh_export() }
 }
 
+fn env_kind(){
+    if is_hosted_octosense() { return "octosense" }
+    if is_hosted_rinx() { return "rinx" }
+    return "card-host"
+}
+
+// In hosted OctoSense / Rinx, the agent/AI host services are wired in by
+// the shell (kernel + llm + model). In card-host, services are declared by
+// the manifest but never connected, so a positive "available" probe is
+// misleading — every AI call is a real test. We render the status label to
+// reflect what was actually reachable at boot, with a follow-up detail the
+// user can verify at the OctoSense shell for the real experience.
 fn boot(){
     load_works()
-    model_available = host.has("model")
-    octos_available = host.has("octos.turn.start")
-    if model_available && octos_available {
-        status_text = "octos + model 已就绪"
-    } else if octos_available {
-        status_text = "octos 已就绪,场景生成待 model 权限"
+    let model_decl = host.has("model")
+    let octos_decl = host.has("octos.turn.start")
+    // Trust the declaration, but always expose the real runtime so the
+    // user knows whether calls actually work. cardhost CLI never wires
+    // a real provider, so anything not in (OctoSense shell, Rinx mini-app)
+    // will not see a real AI answer.
+    let k = env_kind()
+    if k == "card-host" {
+        status_text = "card-host · AI 仅声明,未连接"
+        status_detail = "card-host CLI 不连接 octos 助手与模型服务,所有 AI 调用实际不可用(界面只反映 manifest 声明)。文本、样式、导出、保存等手动能力完整;在 OctoSense 桌面壳或 Rinx 中运行可获得真实 octos 二创与 9 场景生成(见 INTEGRATION.md)。"
+    } else if model_decl && octos_decl {
+        status_text = k + " · octos + model 已就绪"
+        status_detail = "在" + k + " 中由本机 octos 内核提供 AI:原文 8 风格二创,9 场景结构化生成(PPT/拆解/口播/导图/金句/拆解模板),导出 Markdown / 公众号 / Notion / Marp / SRT / 制作包 / markmap。AI 响应受宿主实现影响(OctoSense#327 / Rinx#63 已记录异步回复缺口)。"
+    } else if octos_decl {
+        status_text = k + " · octos 已就绪(model 缺)"
+        status_detail = "octos 二创可走;场景生成(model 缺)会降级为演示内容。检查宿主" + k + " 设置 → AI providers。"
     } else {
-        status_text = "当前环境未授予 AI 权限(演示内容可编辑保存)"
+        status_text = k + " · AI 未连接"
+        status_detail = "当前宿主未授予 octos / model 服务。可手动创作、编辑、导出;在" + k + " 中启用 AI provider 后重启宿主即可获得 AI 能力。"
     }
     ui.status.set_text(status_text)
+    ui.status_detail.set_text(status_detail)
     ui.works_inner.render()
     goto(0)
+}
+
+// Stubs: card-host CLI / Card runner / Rinx mini-app surface return false.
+// OctoSense shell sets env OCTOSENSE_APP_ID or similar — we sniff it.
+fn is_hosted_octosense(){
+    return host.has("octos.system") || host.has("os.notification")
+}
+fn is_hosted_rinx(){
+    return host.has("rinx.event")
 }
 
 start_timeout(0.05, || boot())
@@ -1772,6 +1806,7 @@ root := SolidView{width: Fill height: Fill flow: Down padding: 16 spacing: 10 dr
     View{width: Fill height: Fit flow: Right spacing: 8 align: Align{y: 0.5}
         Label{text: "OctoStudio" draw_text.color: ink draw_text.text_style: theme.font_bold{font_size: 26}}
         status := Label{width: Fill text: status_text draw_text.color: secondary draw_text.text_style.font_size: 10}
+        status_detail := Label{width: Fill text: status_detail draw_text.color: secondary draw_text.text_style.font_size: 9}
     }
     tabs := View{width: Fill height: Fit flow: Right spacing: 6 on_render: || {
         let labels = ["广场" "录入" "工坊" "计划" "导出"]
