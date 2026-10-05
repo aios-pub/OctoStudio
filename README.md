@@ -4,7 +4,7 @@
 
 <!-- 视频介绍(60s @ 30fps,18 景精确 60s · v0.4.3 全品类:10 主题 / 5 视频预设 / M3 内容管理 / AI 助手 7 项 / 3 宿主真实运行) -->
 <p align="center">
-  <video src="assets/promo-v10.mp4" controls width="960" preload="metadata"></video>
+  <video src="https://raw.githubusercontent.com/aios-pub/OctoStudio/main/assets/promo-v10.mp4" controls preload="metadata" width="960"><a href="https://raw.githubusercontent.com/aios-pub/OctoStudio/main/assets/promo-v10.mp4">▶️ 播放 60s promo (14.9 MB)</a></video>
 </p>
 
 <p align="center">
