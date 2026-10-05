@@ -51,6 +51,19 @@ OctoStudio 的两条产品意境,贯穿所有屏幕、所有交互、所有降�
 
 一个 **场景广场**,十个创作入口,全部"一句话进,结构化出,可编辑,多格式出":
 
+#### 能力在三种宿主下的实际表现(2026-10-04 实测)
+
+OctoStudio 的所有 9 场景(原文二创 / 图文 / 视频分镜 / PPT / 拆解视频 / 标题工坊 / 小红书 / 口播 / 思维导图 / 金句语录)和工坊 8 风格二创,都依赖宿主实际接入的 `model` 与 `octos.turn.start` 服务。下面是与本机 `host.has()` 报告无关的实测结果:
+
+| 宿主 | `model` | `octos.turn.start` | 9 场景生成 | 原文 8 风格二创 | 实际行为 |
+|---|---|---|---|---|---|
+| **OctoSense 桌面壳**(hosted) | ✅ | ✅ | ✅ | ✅ | AI 由本机 octos 内核 + 配 provider 真实返回 |
+| **Rinx 小程序**(hosted 模式) | ❌ | ✅ | ⚠️ 部分 | ⚠️ 部分 | 原文二创可走,场景生成(model)降级;[Rinx#63](https://github.com/hagency-org/Rinx/issues/63) 记录 mini-app octos 异步回复缺口 |
+| **card-host CLI** | ❌ | ❌ | ❌ | ❌ | 能力仅在 manifest 声明,无服务实际连接;全部走演示内容 |
+
+`host.has("model")` / `host.has("octos.turn.start")` 在 card-host CLI 下会基于 manifest 声明返回 true(早期版本会显示"已就绪"),**但实际不连通**——这是 card-host 的设计,不是本应用 bug。v0.3.3 起在 card-host 下状态栏会显式标记"AI 仅声明,未连接",并指向 OctoSense 桌面壳以获得真实 AI 能力(见 [INTEGRATION.md](INTEGRATION.md))。
+
+
 | # | 能力 | 用到的平台能力 | 截图 |
 |---|---|---|---|
 | 1 | **原文二创 × 8 种风格** — 粘贴原文,改写 / 翻译 / 总结 / 评论 / 润色 / 续写 / 扩写 / 小红书体 | `octos.turn.start` | 规划补拍 |

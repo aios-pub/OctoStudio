@@ -16,8 +16,8 @@
   "integrity": {
     "bundle_blake3": "0d81c8a5409f8d9fe58d66fc27574232ab4af914093d703d7342b9279bea14e2",
     "signature": {
-      "key_id": "aios.pub",
-      "value": "616ba4524b9650c48dee7d1a078b77594b3733d751708ca5e85cf58f151e444a0c2d99f261e2313077cb9d436aacddbdc2137820ac030612dfc2f727d7163f00"
+      "key_id": "amosgeek",
+      "value": "a0c933cafd1dc0477cf0471d2839e01605f959c0ea57f17e79ae35afbc5d202f975b27fefeea0705af9100a64a3c175af8a9f1d83ef29be4377cb0050ff61103"
     }
   },
   "name": "OctoStudio",
