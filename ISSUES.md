@@ -63,6 +63,28 @@
   - card-host probe 返回 `not granted "octos", which "octos.image" needs`(在 manifest 未声明时)
 - **诉求**:在 `octos` family 下新增 4 个 Agent 触发方法(image / video / audio / embeddings),与 #85–#88 配套
 
+### #380 — Desktop shell launcher popup 不显示已装 Card 应用
+
+- **仓库**:[OctoSense-org/OctoSense#380](https://github.com/OctoSense-org/OctoSense/issues/380)
+- **类型**:产品 bug(desktop shell 集成路径)
+- **状态**:⏳ 待评审
+- **现象**:OctoStudio 0.4.4 经本地 mirror 发布 + catalog sequence 5 admit + 装到 `~/.octosense/apps/.bundles/octostudio/bundle/`,`integrity.bundle_blake3` 与目录对齐,`may_run` 通过。**但桌面壳 launcher 弹窗(Apps drawer)只显示 9 个系统 card 应用(Reference/Browser/Files/Terminal/Task Manager/Sheets/Clock/Weather/Finance),不显示已装 OctoStudio;dock 同样漏掉。**
+- **根因**(从 `crates/shell/src/apps.rs` + `crates/app-hub-app/src/lib.rs` + `crates/appstore/src/lib.rs` 读出):
+  - `installed_apps()` 正确读到 `octostudio 0.4.4`
+  - `apps_uncached()` 用 `clients::available_apps()` 合并 system + installed 后过 `is_launchable` 滤
+  - `is_launchable()` 在 `hosting == Module` 分支要求 `registry.module(&app.id).is_some()`;installed app 的 id 是 `octostudio`,但 card runner 注册为 `card` 模块,不是 per-app 模块,lookup 失败 → `is_launchable` 返 false → 行被丢弃
+  - `apps_uncached` 链未对 `hub:` 前缀的 id 放行
+- **诊断依据**:
+  - 同一根因下,`~/.octosense/apps/.running/*/` 仍有 12 份 v0.3.x 缓存(说明 installed-then-launched 路径历史可用)
+  - 直接 `card-host --bundle .../bundle --app-data ~/.octosense --allow-unsigned` 跑得通(独立模式),证明 bundle 本身无问题
+  - 阻塞只发生在 `desktop shell` 的 launcher 与 dock 路径
+- **影响**:用户从 App Hub 装的所有脚本应用,在桌面壳里都不可见、点不到。手机/桌面的端用户实际拿不到已装的应用,App Hub 商店的真实价值被阻断。
+- **建议修复**:
+  1. `apps::is_launchable` 对 `hosting == Module && id.starts_with("hub:")` 直接放行(card 模块托管所有脚本应用,`module_open` 已能正确路由)
+  2. `apps_uncached` 在 `is_launchable` 过滤前对 `hub:` 前缀的 installed 行豁免
+- **临时绕过**:开发者本地 `card-host` 直跑,或用户在 App Hub 窗口里点 *Open*。
+- **关联**:与 [[#327]] 一起读(同属 desktop shell 与 card-host isolate 之间的 host.service pump 缺口群)
+
 ## 三、hagency-org/Rinx(共 1 个)
 
 ### #63 — card mini-app `octos.*` 异步回复缺口
@@ -82,6 +104,9 @@
 | 仓库 | 我提的 issue 数 | 其中能力缺口 | 其中提交/互操作 |
 |---|---|---|---|
 | OctoSense-App-Hub | 5 | 4 | 1 |
-| OctoSense | 1 | 1 | 0 |
+| OctoSense | 2 | 1 | 1 |
 | Rinx | 1 | 0 | 1 |
-| **合计** | **7** | **5** | **2** |
+| **合计** | **8** | **5** | **3** |
+
+补充评论:
+- **#327**(OctoSense):本轮在 main @ 2026-10-08 + OctoStudio 0.4.4 + 70s 应用侧看门狗下完整复现(`model.budget` 同步返 OK,`model.complete` worker-thread 回调永不触发,ledger 显示调用已记账)。Reporter 的 `take_replies_for` 泵修复方向正确,从 `crates/shell/src/module_host.rs` 也能看到 card isolate 路径确实没有接这个 pump。
