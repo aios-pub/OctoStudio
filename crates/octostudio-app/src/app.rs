@@ -16,6 +16,8 @@ use makepad_widgets::*;
 use octostudio_core::Screen;
 use octostudio_render::AppState;
 
+use crate::boot;
+
 static APP_STATE: OnceLock<Mutex<AppState>> = OnceLock::new();
 
 fn state() -> MutexGuard<'static, AppState> {
@@ -312,7 +314,16 @@ impl App {
 
 impl MatchEvent for App {
     fn handle_startup(&mut self, cx: &mut Cx) {
-        log!("OctoStudio v0.6 — native Makepad app starting (C3 6 屏 + TabBar)");
+        // C4: hydrate AppState from disk.
+        let (works, config) = boot::boot();
+        {
+            let mut s = state();
+            s.works = works;
+            s.api_key = config.api_key;
+            // theme_mode + model_class are read from config but only
+            // consumed by the Settings screen (C9) and AI calls (C5).
+        }
+        log!("OctoStudio v0.6 — native Makepad app starting (C4 boot + storage)");
         self.init_tabs(cx);
     }
 

@@ -12,6 +12,7 @@ pub use makepad_widgets;
 use makepad_widgets::*;
 
 mod app;
+mod boot;
 mod theme;
 
 use crate::app::App;
