@@ -201,14 +201,113 @@ script_mod! {
             draw_text.text_style.font_size: 22
         }
         settings_subtitle := Label{
-            text: "API key / 测试连接 / 主题 / 配额 — C3 stub"
+            text: "Agnes 3.0 Flash / 2.5 Image / 2.5 Video · OpenAI 兼容"
             draw_text.color: #x8E8E93
             draw_text.text_style.font_size: 12
         }
-        settings_placeholder := Label{
-            text: "API key TextInput + 测试连接 button + 主题 picker + 配额 Card — C9 落地"
-            draw_text.color: #x8E8E93
-            draw_text.text_style.font_size: 12
+
+        // API key card
+        View{
+            width: Fill height: Fit
+            flow: Down padding: Inset{top: 12, bottom: 12, left: 12, right: 12}
+            spacing: 8
+            draw_bg.color: #xFFFFFF
+            draw_bg.border_radius: 10.0
+            draw_bg.border_size: 1.0
+            draw_bg.border_color: #xE5E5EA
+
+            Label{
+                text: "🔑 API key (apihub.agnes-ai.com)"
+                draw_text.color: #x1C1C1E
+                draw_text.text_style.font_size: 14
+            }
+            settings_key_input := TextInput{
+                width: Fill height: 32
+                empty_text: "sk-..."
+                draw_bg +: {
+                    color: #xF6F6F8
+                    color_focus: #xFFFFFF
+                    border_radius: 8.0
+                }
+            }
+            View{
+                width: Fill height: Fit
+                flow: Right spacing: 8
+                settings_key_save := ButtonFlat{
+                    text: "保存"
+                    height: 32 padding: Inset{left: 14, right: 14}
+                    draw_bg +: {
+                        color: #xFF6B35
+                        color_hover: #xFF8866
+                        border_radius: 16.0
+                    }
+                    draw_text +: { color: #xFFFFFF }
+                }
+                settings_key_test := ButtonFlat{
+                    text: "测试连接"
+                    height: 32 padding: Inset{left: 14, right: 14}
+                    draw_bg +: {
+                        color: #x2E7D5B
+                        color_hover: #x4E9D7B
+                        border_radius: 16.0
+                    }
+                    draw_text +: { color: #xFFFFFF }
+                }
+            }
+        }
+
+        // Theme card
+        View{
+            width: Fill height: Fit
+            flow: Down padding: Inset{top: 12, bottom: 12, left: 12, right: 12}
+            spacing: 8
+            draw_bg.color: #xFFFFFF
+            draw_bg.border_radius: 10.0
+            draw_bg.border_size: 1.0
+            draw_bg.border_color: #xE5E5EA
+
+            Label{
+                text: "🎨 主题"
+                draw_text.color: #x1C1C1E
+                draw_text.text_style.font_size: 14
+            }
+            settings_theme_chip := ButtonFlat{
+                text: "☀ 浅色(v0.6 默认)"
+                height: 32 padding: Inset{left: 14, right: 14}
+                draw_bg +: {
+                    color: #xF6F6F8
+                    color_hover: #xE5E5EA
+                    border_radius: 16.0
+                }
+                draw_text +: { color: #x1C1C1E }
+            }
+            Label{
+                text: "深色 / 系统:留 v0.6.1"
+                draw_text.color: #x8E8E93
+                draw_text.text_style.font_size: 11
+            }
+        }
+
+        // Usage card
+        View{
+            width: Fill height: Fit
+            flow: Down padding: Inset{top: 12, bottom: 12, left: 12, right: 12}
+            spacing: 8
+            draw_bg.color: #xFFFFFF
+            draw_bg.border_radius: 10.0
+            draw_bg.border_size: 1.0
+            draw_bg.border_color: #xE5E5EA
+
+            Label{
+                text: "📊 配额 (今日)"
+                draw_text.color: #x1C1C1E
+                draw_text.text_style.font_size: 14
+            }
+            settings_usage_label := Label{
+                text: "— 调用 / — tokens(usage.json 累计)"
+                draw_text.color: #x8E8E93
+                draw_text.text_style.font_size: 12
+            }
         }
     }
 
@@ -396,6 +495,14 @@ impl MatchEvent for App {
             self.test_export(cx);
             return;
         }
+        if self.ui.button(cx, ids!(settings_key_save)).clicked(actions) {
+            self.save_api_key(cx);
+            return;
+        }
+        if self.ui.button(cx, ids!(settings_key_test)).clicked(actions) {
+            self.test_connection(cx);
+            return;
+        }
     }
 }
 
@@ -425,6 +532,104 @@ impl App {
         for (id, emoji, label) in tabs.iter() {
             self.ui.button(cx, id).set_text(cx, &format!("{}\n{}", emoji, label));
         }
+        // Hydrate Settings fields from current config
+        let api_key = state().api_key.clone().unwrap_or_default();
+        if !api_key.is_empty() {
+            let placeholder = format!("sk-…(当前:{:.8})", api_key);
+            self.ui.text_input(cx, ids!(settings_key_input))
+                .set_text(cx, "");
+            self.ui.label(cx, ids!(status_label))
+                .set_text(cx, &format!("已加载 API key ({})", &placeholder));
+        }
+        self.refresh_usage_label(cx);
+    }
+
+    /// Reload the usage.json roll-up into the Settings usage label.
+    fn refresh_usage_label(&mut self, cx: &mut Cx) {
+        use octostudio_storage::usage::load_usage;
+        match load_usage() {
+            Ok(log) => {
+                let today = chrono::Local::now().format("%Y-%m-%d").to_string();
+                let row = log.days.iter().find(|d| d.date == today);
+                let (calls, ptok, ctok) = row
+                    .map(|d| (d.calls, d.prompt_tokens, d.completion_tokens))
+                    .unwrap_or((0, 0, 0));
+                let total_calls: u32 = log.days.iter().map(|d| d.calls).sum();
+                let total_tok: u64 = log.days.iter().map(|d| d.prompt_tokens + d.completion_tokens).sum();
+                let msg = format!(
+                    "今日 {} 调用 / {} tokens · 累计 {} 调用 / {} tokens",
+                    calls, ptok + ctok, total_calls, total_tok
+                );
+                self.ui.label(cx, ids!(settings_usage_label)).set_text(cx, &msg);
+            }
+            Err(_) => {
+                self.ui.label(cx, ids!(settings_usage_label))
+                    .set_text(cx, "(usage.json 暂无数据)");
+            }
+        }
+    }
+
+    /// Save the current API key from the Settings TextInput into config.json
+    /// and APP_STATE. Surfaces success/failure in the status label.
+    fn save_api_key(&mut self, cx: &mut Cx) {
+        use octostudio_storage::config::{save_config, Config};
+        let raw = self.ui.text_input(cx, ids!(settings_key_input)).text();
+        let key = raw.trim().to_string();
+        if key.is_empty() {
+            self.ui.label(cx, ids!(status_label))
+                .set_text(cx, "⚠ API key 为空");
+            return;
+        }
+        let cfg = Config {
+            api_key: Some(key.clone()),
+            ..Config::default()
+        };
+        match save_config(&cfg) {
+            Ok(_) => {
+                state().api_key = Some(key.clone());
+                let masked = if key.len() > 8 {
+                    format!("{}…{}", &key[..4], &key[key.len()-4..])
+                } else { "***".to_string() };
+                self.ui.label(cx, ids!(status_label))
+                    .set_text(cx, &format!("✓ API key 已保存 ({})", masked));
+            }
+            Err(e) => {
+                self.ui.label(cx, ids!(status_label))
+                    .set_text(cx, &format!("✗ 保存失败: {e}"));
+            }
+        }
+        self.ui.redraw(cx);
+    }
+
+    /// Call Agnes 3.0 Flash with a 1-token ping to verify connectivity.
+    /// Surfaces result in the status label.
+    fn test_connection(&mut self, cx: &mut Cx) {
+        use octostudio_ai::TextClient;
+        let key = state().api_key.clone();
+        let key = match key {
+            Some(k) if !k.is_empty() => k,
+            _ => {
+                self.ui.label(cx, ids!(status_label))
+                    .set_text(cx, "⚠ 先保存 API key");
+                return;
+            }
+        };
+        self.ui.label(cx, ids!(status_label))
+            .set_text(cx, "🔄 测试连接中…(Agnes 3.0 Flash)");
+        self.ui.redraw(cx);
+        let client = TextClient::new(key);
+        match client.chat("你只回答 OK", "ping") {
+            Ok(reply) => {
+                let preview = if reply.len() > 40 { &reply[..40] } else { &reply };
+                self.ui.label(cx, ids!(status_label))
+                    .set_text(cx, &format!("✓ 连接成功 — reply: {}", preview));
+            }
+            Err(e) => {
+                self.ui.label(cx, ids!(status_label))
+                    .set_text(cx, &format!("✗ 连接失败: {e}"));
+            }
+        }
+        self.ui.redraw(cx);
     }
 
     /// Test the image API (C6). Reads the API key from APP_STATE, calls
