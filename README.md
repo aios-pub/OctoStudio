@@ -2,19 +2,19 @@
 
 > **言出法随,意到文成。"一句话"——拆开是意图,合上是产物。**
 
-<!-- 视频介绍(60s @ 30fps,18 景精确 60s · v0.4.3 全品类:10 主题 / 5 视频预设 / M3 内容管理 / AI 助手 7 项 / 3 宿主真实运行)
+<!-- 视频介绍(v12.6 · 199s @ 30fps · 23 景 · 5 幕叙事:痛 → 觉醒 → 演示 → 能力 → 实证)
      GitHub README <video> 标签被 strip → 动画 GIF 作内嵌预览;
      点击 GIF 跳转 B 站播放页(带音频/弹幕/高清);GitHub blob 页与 raw 下载作备选 -->
 <p align="center">
-  <a href="https://www.bilibili.com/video/BV1MZHW6MEWZ/" target="_blank">
+  <a href="https://www.bilibili.com/video/BV1Qdpp6kEY6/" target="_blank">
     <img src="assets/promo-v10-preview.gif" alt="▶️ 点击观看视频介绍(哔哩哔哩)" width="960">
   </a>
 </p>
 
 <p align="center">
-  <sub>▶️ <a href="https://www.bilibili.com/video/BV1MZHW6MEWZ/" target="_blank">哔哩哔哩观看【OctoStudio 功能介绍】</a>
-  · ⬇️ <a href="https://github.com/aios-pub/OctoStudio/raw/main/assets/promo-v10.mp4">下载 MP4 (14.9 MB)</a>
-  · 18 景精确 60.000s @ 30fps</sub>
+  <sub>▶️ <a href="https://www.bilibili.com/video/BV1Qdpp6kEY6/" target="_blank">哔哩哔哩观看【OctoStudio 功能介绍】</a>
+  · ⬇️ <a href="https://github.com/aios-pub/OctoStudio/raw/main/assets/promo-v12.mp4">下载 MP4 (34 MB)</a>
+  · 23 景精确 199.000s @ 30fps · v0.4.6</sub>
 </p>
 
 言出法随,意到文成。
