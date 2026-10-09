@@ -13,6 +13,8 @@ use octostudio_storage::config::{load_config, Config};
 use octostudio_storage::migration;
 use octostudio_storage::works::{load_works, save_works};
 
+use crate::app::state;
+
 /// Load works + config. Always succeeds (errors are swallowed with
 /// `eprintln!` so the user sees them in stderr but the app boots).
 pub fn boot() -> (Vec<Work>, Config) {
@@ -47,6 +49,23 @@ pub fn boot() -> (Vec<Work>, Config) {
             demo_works()
         }
     };
+
+    // C13: pre-load the first demo work's source/content into current_*
+    // so the Studio 7 AI panel chips have real text to operate on out of
+    // the box (splash had the same effect when open_work was called).
+    if let Some(w) = works.first() {
+        let mut s = state();
+        s.current_id = w.id.clone();
+        s.current_title = w.title.clone();
+        s.current_source = w.source.clone();
+        s.current_content = w.content.clone();
+        s.current_style = w.style.clone();
+        s.plan_kind = w.plan_kind.unwrap_or(octostudio_core::PlanKind::None);
+        s.current_plan_title = w.plan_title.clone();
+        s.current_plan_summary = w.plan_summary.clone();
+        s.current_plan_items = w.plan_items.clone();
+        s.current_composition = w.composition.clone();
+    }
 
     (works, config)
 }

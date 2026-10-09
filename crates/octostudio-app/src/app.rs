@@ -18,9 +18,9 @@ use octostudio_render::AppState;
 
 use crate::boot;
 
-static APP_STATE: OnceLock<Mutex<AppState>> = OnceLock::new();
+pub static APP_STATE: OnceLock<Mutex<AppState>> = OnceLock::new();
 
-fn state() -> MutexGuard<'static, AppState> {
+pub fn state() -> MutexGuard<'static, AppState> {
     APP_STATE
         .get_or_init(|| Mutex::new(AppState::new()))
         .lock()
@@ -236,7 +236,7 @@ script_mod! {
         width: Fill height: Fill
         flow: Down
         padding: Inset{top: 16, bottom: 16, left: 24, right: 24}
-        spacing: 12
+        spacing: 8
         draw_bg.color: #xF6F6F8
 
         studio_title := Label{
@@ -245,14 +245,101 @@ script_mod! {
             draw_text.text_style.font_size: 22
         }
         studio_subtitle := Label{
-            text: "8 改写风格 + 7 AI 助手 + 流式 chat — C3 stub"
+            text: "C13 — 8 style chip + AI 创作/重试/撤销/快照 + 7 AI panel chip 接 TextClient"
             draw_text.color: #x8E8E93
             draw_text.text_style.font_size: 12
         }
-        studio_placeholder := Label{
-            text: "style chips / 撤销 / 标题 / 原文 / 成稿 / AI 助手 panel — C5-C9 落地"
-            draw_text.color: #x8E8E93
-            draw_text.text_style.font_size: 12
+
+        // 8 style chip 横排
+        View{
+            width: Fill height: Fit
+            flow: Right spacing: 4
+            studio_s1 := ButtonFlat{ text: "改写" height: 28 padding: Inset{left:10,right:10}
+                draw_bg +: { color: #xFF6B35 border_radius: 14.0 } draw_text +: { color: #xFFFFFF } }
+            studio_s2 := ButtonFlat{ text: "翻译" height: 28 padding: Inset{left:10,right:10}
+                draw_bg +: { color: #xF6F6F8 border_radius: 14.0 } draw_text +: { color: #x1C1C1E } }
+            studio_s3 := ButtonFlat{ text: "总结" height: 28 padding: Inset{left:10,right:10}
+                draw_bg +: { color: #xF6F6F8 border_radius: 14.0 } draw_text +: { color: #x1C1C1E } }
+            studio_s4 := ButtonFlat{ text: "评论" height: 28 padding: Inset{left:10,right:10}
+                draw_bg +: { color: #xF6F6F8 border_radius: 14.0 } draw_text +: { color: #x1C1C1E } }
+            studio_s5 := ButtonFlat{ text: "润色" height: 28 padding: Inset{left:10,right:10}
+                draw_bg +: { color: #xF6F6F8 border_radius: 14.0 } draw_text +: { color: #x1C1C1E } }
+            studio_s6 := ButtonFlat{ text: "续写" height: 28 padding: Inset{left:10,right:10}
+                draw_bg +: { color: #xF6F6F8 border_radius: 14.0 } draw_text +: { color: #x1C1C1E } }
+            studio_s7 := ButtonFlat{ text: "扩写" height: 28 padding: Inset{left:10,right:10}
+                draw_bg +: { color: #xF6F6F8 border_radius: 14.0 } draw_text +: { color: #x1C1C1E } }
+            studio_s8 := ButtonFlat{ text: "小红书体" height: 28 padding: Inset{left:10,right:10}
+                draw_bg +: { color: #xF6F6F8 border_radius: 14.0 } draw_text +: { color: #x1C1C1E } }
+        }
+
+        // AI 创作/重试/撤销/快照 + 标题输入
+        View{
+            width: Fill height: Fit
+            flow: Down spacing: 4
+            Label{ text: "标题" draw_text.color: #x8E8E93 draw_text.text_style.font_size: 11 }
+            studio_title_input := TextInput{
+                width: Fill height: 36
+                empty_text: "作品标题..."
+                draw_bg +: { color: #xFFFFFF color_focus: #xF6F6F8 border_radius: 8.0 }
+            }
+            View{ width: Fill height: Fit flow: Right spacing: 6
+                studio_ai_write := ButtonFlat{ text: "✨ AI 创作(按当前 style 改写)"
+                    height: 36 padding: Inset{left:14,right:14}
+                    draw_bg +: { color: #xFF6B35 color_hover: #xFF8866 border_radius: 18.0 }
+                    draw_text +: { color: #xFFFFFF } }
+                studio_ai_retry := ButtonFlat{ text: "🔄 重试"
+                    height: 36 padding: Inset{left:14,right:14}
+                    draw_bg +: { color: #xF6F6F8 border_radius: 18.0 }
+                    draw_text +: { color: #x1C1C1E } }
+                studio_undo := ButtonFlat{ text: "↶ 撤销(0)"
+                    height: 36 padding: Inset{left:14,right:14}
+                    draw_bg +: { color: #xF6F6F8 border_radius: 18.0 }
+                    draw_text +: { color: #x1C1C1E } }
+                studio_snapshot := ButtonFlat{ text: "📷 快照原文"
+                    height: 36 padding: Inset{left:14,right:14}
+                    draw_bg +: { color: #xF6F6F8 border_radius: 18.0 }
+                    draw_text +: { color: #x1C1C1E } }
+            }
+        }
+
+        // 原文输入(从 current_source 同步)
+        Label{ text: "原文 / 内容" draw_text.color: #x8E8E93 draw_text.text_style.font_size: 11 }
+        studio_source_label := Label{ text: "(空 — 在「录入」填)"
+            draw_text.color: #x1C1C1E draw_text.text_style.font_size: 12 }
+
+        // AI 助手 panel: 7 chips + result label
+        View{
+            width: Fill height: Fit
+            flow: Down spacing: 6
+            padding: Inset{top: 8, bottom: 8, left: 12, right: 12}
+            draw_bg.color: #xFFFFFF
+            draw_bg.border_radius: 10.0
+            draw_bg.border_size: 1.0
+            draw_bg.border_color: #xE5E5EA
+
+            Label{ text: "🤖 AI 助手(7 项) — Agnes 3.0 Flash"
+                draw_text.color: #x1C1C1E draw_text.text_style.font_size: 13 }
+            View{ width: Fill height: Fit flow: Right spacing: 4
+                studio_p1 := ButtonFlat{ text: "起标题" height: 24 padding: Inset{left:8,right:8}
+                    draw_bg +: { color: #xFFE9D6 border_radius: 12.0 } draw_text +: { color: #xB3541E } }
+                studio_p2 := ButtonFlat{ text: "关键词" height: 24 padding: Inset{left:8,right:8}
+                    draw_bg +: { color: #xFFE9D6 border_radius: 12.0 } draw_text +: { color: #xB3541E } }
+                studio_p3 := ButtonFlat{ text: "摘要" height: 24 padding: Inset{left:8,right:8}
+                    draw_bg +: { color: #xFFE9D6 border_radius: 12.0 } draw_text +: { color: #xB3541E } }
+                studio_p4 := ButtonFlat{ text: "风格迁移" height: 24 padding: Inset{left:8,right:8}
+                    draw_bg +: { color: #xFFE9D6 border_radius: 12.0 } draw_text +: { color: #xB3541E } }
+                studio_p5 := ButtonFlat{ text: "中英对照" height: 24 padding: Inset{left:8,right:8}
+                    draw_bg +: { color: #xFFE9D6 border_radius: 12.0 } draw_text +: { color: #xB3541E } }
+                studio_p6 := ButtonFlat{ text: "标题打分" height: 24 padding: Inset{left:8,right:8}
+                    draw_bg +: { color: #xFFE9D6 border_radius: 12.0 } draw_text +: { color: #xB3541E } }
+                studio_p7 := ButtonFlat{ text: "模型预算" height: 24 padding: Inset{left:8,right:8}
+                    draw_bg +: { color: #xE5E5EA border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+            }
+            studio_result_label := Label{
+                text: "(点任意 AI 助手 chip,结果会显示在这里)"
+                draw_text.color: #x8E8E93
+                draw_text.text_style.font_size: 12
+            }
         }
     }
 
@@ -915,6 +1002,236 @@ impl App {
         self.ui.label(cx, ids!(plan_summary_label)).set_text(cx, &summary);
         self.ui.redraw(cx);
     }
+
+    // -------- C13: Studio AI panel + 8 style + 创作/重试/撤销/快照 --------
+
+    /// Sync the title text input from `current_title` (used in handle_startup).
+    fn sync_studio_inputs(&mut self, cx: &mut Cx) {
+        let title = state().current_title.clone();
+        if !title.is_empty() {
+            self.ui.text_input(cx, ids!(studio_title_input))
+                .set_text(cx, &title);
+        }
+        let src = if state().current_source.is_empty() {
+            state().current_content.clone()
+        } else {
+            state().current_source.clone()
+        };
+        let src_label = if src.is_empty() {
+            "(空 — 在「录入」填)".to_string()
+        } else {
+            let n = src.chars().count();
+            let preview: String = src.chars().take(120).collect();
+            format!("{} 字 · {}{}", n, preview, if n > 120 { "…" } else { "" })
+        };
+        self.ui.label(cx, ids!(studio_source_label))
+            .set_text(cx, &src_label);
+        self.ui.redraw(cx);
+    }
+
+    /// Sync the title text input → state. Called after any chip click.
+    fn write_studio_title_to_state(&mut self, cx: &mut Cx) {
+        let title = self.ui.text_input(cx, ids!(studio_title_input)).text();
+        let title = title.trim().to_string();
+        if !title.is_empty() {
+            state().current_title = title;
+        }
+    }
+
+    /// Switch `current_style` (C13: state-only; chip tinting via script_mod
+    /// draw_bg.color requires `apply_over` which ButtonRef doesn't expose,
+    /// so the next render pass will show the active style in the status).
+    fn studio_set_style(&mut self, cx: &mut Cx, style: &str) {
+        state().current_style = style.to_string();
+        self.ui.label(cx, ids!(status_label))
+            .set_text(cx, &format!("✓ 风格:{style}"));
+        self.ui.redraw(cx);
+    }
+
+    /// 1 chip → 1 TextClient panel helper call → 1 result line in
+    /// `ai_result_label`. With key: real API; without: friendly hint.
+    fn ai_panel_handler(&mut self, cx: &mut Cx, panel: StudioPanel) {
+        use octostudio_ai::TextClient;
+        self.write_studio_title_to_state(cx);
+        let source = {
+            let s = state();
+            if s.current_source.is_empty() { s.current_content.clone() } else { s.current_source.clone() }
+        };
+        if source.trim().is_empty() {
+            self.ui.label(cx, ids!(ai_result_label))
+                .set_text(cx, "⚠ 先在「录入」填原文/内容,或在 title 输入文字");
+            self.ui.label(cx, ids!(status_label))
+                .set_text(cx, "⚠ 无源内容");
+            return;
+        }
+        let key = state().api_key.clone();
+        let key = match key.filter(|k| !k.is_empty()) {
+            Some(k) => k,
+            None => {
+                let demo = match panel {
+                    StudioPanel::GenTitle => "清晨四点五十分,海面还蒙着夜的薄纱。",
+                    StudioPanel::ExtractKeywords => "海浪;薄纱;日出;节奏;疗愈",
+                    StudioPanel::Summarize => "一作者用慢生活的三个时刻,说明'慢'不是懒而是感官。",
+                    StudioPanel::StyleVariants => "[理性] 慢 = 时间的有效配置。\n[抒情] 慢 = 把时间还给了感觉。\n[犀利] 慢 = 不被算法消费的主动权。\n[温暖] 慢 = 一杯凉茶里看见的日子。",
+                    StudioPanel::TranslateZhEn => "{ zh: \"...\", en: \"...\" }",
+                    StudioPanel::ScoreTitle => "85/100 — 建议:加入数字/反差提升点击率",
+                    StudioPanel::Budget => "见 设置 屏配额卡片(usage.json)",
+                };
+                self.ui.label(cx, ids!(ai_result_label))
+                    .set_text(cx, &format!("[demo · 无 API key] {} — {}", panel.label(), demo));
+                self.ui.label(cx, ids!(status_label))
+                    .set_text(cx, &format!("✓ {} (demo)", panel.label()));
+                return;
+            }
+        };
+        let client = TextClient::new(key);
+        self.ui.label(cx, ids!(ai_result_label))
+            .set_text(cx, &format!("🤖 {} 中…(10-30s)", panel.label()));
+        self.ui.redraw(cx);
+        let result = match panel {
+            StudioPanel::GenTitle => client.ai_gen_title(&source).map(format_value),
+            StudioPanel::ExtractKeywords => client.ai_extract_keywords(&source).map(format_value),
+            StudioPanel::Summarize => client.ai_summarize(&source).map(format_value),
+            StudioPanel::StyleVariants => client.ai_style_variants(&source).map(format_value),
+            StudioPanel::TranslateZhEn => client.ai_translate_zh_en(&source).map(format_value),
+            StudioPanel::ScoreTitle => client.ai_score_title(&source).map(format_value),
+            StudioPanel::Budget => Ok("(见 Settings 屏 — 本地统计)".to_string()),
+        };
+        match result {
+            Ok(rendered) => {
+                let preview = if rendered.chars().count() > 480 {
+                    let mut s: String = rendered.chars().take(480).collect();
+                    s.push_str("…(截断)");
+                    s
+                } else { rendered };
+                let final_text = format!("✓ {} — {}", panel.label(), preview);
+                self.ui.label(cx, ids!(ai_result_label)).set_text(cx, &final_text);
+                self.ui.label(cx, ids!(status_label))
+                    .set_text(cx, &format!("✓ {} 完成", panel.label()));
+            }
+            Err(e) => {
+                self.ui.label(cx, ids!(ai_result_label))
+                    .set_text(cx, &format!("✗ {} 失败: {}", panel.label(), e));
+                self.ui.label(cx, ids!(status_label))
+                    .set_text(cx, &format!("✗ {} 失败: {}", panel.label(), e));
+            }
+        }
+        self.ui.redraw(cx);
+    }
+
+    /// AI 创作 — 按 current_style 把 source 改写 → current_content
+    fn studio_ai_write_handler(&mut self, cx: &mut Cx) {
+        use octostudio_ai::TextClient;
+        self.write_studio_title_to_state(cx);
+        let source = {
+            let s = state();
+            if s.current_source.is_empty() { s.current_content.clone() } else { s.current_source.clone() }
+        };
+        if source.trim().is_empty() {
+            self.ui.label(cx, ids!(status_label))
+                .set_text(cx, "⚠ 无源内容");
+            return;
+        }
+        let style = state().current_style.clone();
+        let sys = format!("你是一名中文写作助手,按「{style}」风格改写用户内容。");
+        let key = state().api_key.clone();
+        let key = match key.filter(|k| !k.is_empty()) {
+            Some(k) => k,
+            None => {
+                let demo = format!("[demo · {style}]\n\n{source}");
+                state().current_content = demo.clone();
+                self.ui.label(cx, ids!(ai_result_label))
+                    .set_text(cx, &demo);
+                self.ui.label(cx, ids!(status_label))
+                    .set_text(cx, &format!("✓ AI 创作完成(demo,{style})"));
+                return;
+            }
+        };
+        self.ui.label(cx, ids!(status_label))
+            .set_text(cx, &format!("🤖 AI 创作中…(style={style})"));
+        self.ui.redraw(cx);
+        let client = TextClient::new(key);
+        match client.chat(&sys, &source) {
+            Ok(reply) => {
+                state().current_content = reply.clone();
+                let preview: String = reply.chars().take(400).collect();
+                self.ui.label(cx, ids!(ai_result_label))
+                    .set_text(cx, &format!("✓ AI 创作({style}):\n{preview}"));
+                self.ui.label(cx, ids!(status_label))
+                    .set_text(cx, &format!("✓ AI 创作完成({})", &style));
+            }
+            Err(e) => {
+                self.ui.label(cx, ids!(status_label))
+                    .set_text(cx, &format!("✗ AI 创作失败: {e}"));
+            }
+        }
+        self.ui.redraw(cx);
+    }
+
+    /// 重试 — 重新跑上一次的 AI 操作(简化:重跑当前 style 改写)
+    fn studio_ai_retry_handler(&mut self, cx: &mut Cx) {
+        self.studio_ai_write_handler(cx);
+    }
+
+    /// 撤销 — 从 undo_stack 弹一个 snapshot 写回 current_content
+    fn studio_undo_handler(&mut self, cx: &mut Cx) {
+        let popped = {
+            let mut s = state();
+            s.undo_stack.pop_back()
+        };
+        match popped {
+            Some(snap) => {
+                let label = match snap.kind {
+                    octostudio_render::state::UndoKind::Title => {
+                        state().current_title = snap.value;
+                        "标题"
+                    }
+                    octostudio_render::state::UndoKind::Source => {
+                        state().current_source = snap.value;
+                        "原文"
+                    }
+                    octostudio_render::state::UndoKind::Content => {
+                        state().current_content = snap.value;
+                        "成稿"
+                    }
+                };
+                let n = state().undo_stack.len();
+                self.ui.label(cx, ids!(status_label))
+                    .set_text(cx, &format!("✓ 撤销:{label} 1 步,剩 {n} 步"));
+                self.sync_studio_inputs(cx);
+            }
+            None => {
+                self.ui.label(cx, ids!(status_label))
+                    .set_text(cx, "⚠ 撤销栈空");
+            }
+        }
+    }
+
+    /// 快照原文 — push current_source → undo_stack,标记 "快照 N"
+    fn studio_snapshot_handler(&mut self, cx: &mut Cx) {
+        let source = state().current_source.clone();
+        if source.is_empty() {
+            self.ui.label(cx, ids!(status_label))
+                .set_text(cx, "⚠ 原文为空,无可快照内容");
+            return;
+        }
+        let next = {
+            let mut s = state();
+            s.undo_stack.push_back(octostudio_render::state::UndoSnapshot {
+                kind: octostudio_render::state::UndoKind::Source,
+                value: source,
+            });
+            s.undo_stack.len()
+        };
+        self.ui.label(cx, ids!(status_label))
+            .set_text(cx, &format!("✓ 快照原文,撤销栈 {next} 条"));
+    }
+}
+
+/// Render a serde_json::Value as a compact one-line string for the
+/// panel result label.
+fn format_value(v: serde_json::Value) -> String {
+    serde_json::to_string_pretty(&v).unwrap_or_else(|_| format!("{v:?}"))
 }
 
 impl MatchEvent for App {
@@ -930,6 +1247,7 @@ impl MatchEvent for App {
         }
         log!("OctoStudio v0.6 — native Makepad app starting (C4 boot + storage)");
         self.init_tabs(cx);
+        self.sync_studio_inputs(cx);
     }
 
     fn handle_actions(&mut self, cx: &mut Cx, actions: &Actions) {
@@ -1010,9 +1328,61 @@ impl MatchEvent for App {
             self.save_plan_to_works(cx);
             return;
         }
+        // Studio — 7 AI panel chips
+        if self.ui.button(cx, ids!(studio_p1)).clicked(actions) {
+            self.ai_panel_handler(cx, StudioPanel::GenTitle);
+            return;
+        }
+        if self.ui.button(cx, ids!(studio_p2)).clicked(actions) {
+            self.ai_panel_handler(cx, StudioPanel::ExtractKeywords);
+            return;
+        }
+        if self.ui.button(cx, ids!(studio_p3)).clicked(actions) {
+            self.ai_panel_handler(cx, StudioPanel::Summarize);
+            return;
+        }
+        if self.ui.button(cx, ids!(studio_p4)).clicked(actions) {
+            self.ai_panel_handler(cx, StudioPanel::StyleVariants);
+            return;
+        }
+        if self.ui.button(cx, ids!(studio_p5)).clicked(actions) {
+            self.ai_panel_handler(cx, StudioPanel::TranslateZhEn);
+            return;
+        }
+        if self.ui.button(cx, ids!(studio_p6)).clicked(actions) {
+            self.ai_panel_handler(cx, StudioPanel::ScoreTitle);
+            return;
+        }
+        if self.ui.button(cx, ids!(studio_p7)).clicked(actions) {
+            self.ai_panel_handler(cx, StudioPanel::Budget);
+            return;
+        }
+        if self.ui.button(cx, ids!(studio_ai_write)).clicked(actions) {
+            self.studio_ai_write_handler(cx);
+            return;
+        }
+        if self.ui.button(cx, ids!(studio_ai_retry)).clicked(actions) {
+            self.studio_ai_retry_handler(cx);
+            return;
+        }
+        if self.ui.button(cx, ids!(studio_undo)).clicked(actions) {
+            self.studio_undo_handler(cx);
+            return;
+        }
+        if self.ui.button(cx, ids!(studio_snapshot)).clicked(actions) {
+            self.studio_snapshot_handler(cx);
+            return;
+        }
+        // 8 style chips
+        if self.ui.button(cx, ids!(studio_s1)).clicked(actions) { self.studio_set_style(cx, "改写"); return; }
+        if self.ui.button(cx, ids!(studio_s2)).clicked(actions) { self.studio_set_style(cx, "翻译"); return; }
+        if self.ui.button(cx, ids!(studio_s3)).clicked(actions) { self.studio_set_style(cx, "总结"); return; }
+        if self.ui.button(cx, ids!(studio_s4)).clicked(actions) { self.studio_set_style(cx, "评论"); return; }
+        if self.ui.button(cx, ids!(studio_s5)).clicked(actions) { self.studio_set_style(cx, "润色"); return; }
+        if self.ui.button(cx, ids!(studio_s6)).clicked(actions) { self.studio_set_style(cx, "续写"); return; }
+        if self.ui.button(cx, ids!(studio_s7)).clicked(actions) { self.studio_set_style(cx, "扩写"); return; }
+        if self.ui.button(cx, ids!(studio_s8)).clicked(actions) { self.studio_set_style(cx, "小红书体"); return; }
         // Per-item 4 chips × 8 slots — 32 explicit button checks.
-        // (makepad's ids!() expands to &LiveId, not a struct that
-        // supports runtime indexing, so we spell out 32 explicit checks.)
         for (i, ids_arr, acts) in [
             (0u64, [ids!(plan_item0_edit), ids!(plan_item0_up), ids!(plan_item0_down), ids!(plan_item0_del)],
                  [PlanItemAction::Edit, PlanItemAction::Up, PlanItemAction::Down, PlanItemAction::Del]),
@@ -1587,3 +1957,30 @@ fn sort_mode_label(m: octostudio_core::SortMode) -> &'static str {
 
 #[derive(Debug, Clone, Copy)]
 enum PlanItemAction { Edit, Up, Down, Del }
+
+// -------- C13: Studio 7 panel chip enum --------
+
+#[derive(Debug, Clone, Copy)]
+enum StudioPanel {
+    GenTitle,
+    ExtractKeywords,
+    Summarize,
+    StyleVariants,
+    TranslateZhEn,
+    ScoreTitle,
+    Budget,
+}
+
+impl StudioPanel {
+    fn label(self) -> &'static str {
+        match self {
+            StudioPanel::GenTitle => "起标题",
+            StudioPanel::ExtractKeywords => "关键词",
+            StudioPanel::Summarize => "摘要",
+            StudioPanel::StyleVariants => "风格迁移",
+            StudioPanel::TranslateZhEn => "中英对照",
+            StudioPanel::ScoreTitle => "标题打分",
+            StudioPanel::Budget => "模型预算",
+        }
+    }
+}
