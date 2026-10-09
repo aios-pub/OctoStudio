@@ -510,6 +510,10 @@ script_mod! {
                 height: 36 padding: Inset{left:14,right:14}
                 draw_bg +: { color: #x4A6FA5 color_hover: #x6A8FC5 border_radius: 18.0 }
                 draw_text +: { color: #xFFFFFF } }
+            plan_to_export := ButtonFlat{ text: "📤 导出 →"
+                height: 36 padding: Inset{left:14,right:14}
+                draw_bg +: { color: #x8E8E93 border_radius: 18.0 }
+                draw_text +: { color: #x1C1C1E } }
         }
         plan_image_url_label := Label{ text: "(尚未配图)"
             draw_text.color: #x8E8E93 draw_text.text_style.font_size: 11 }
@@ -519,7 +523,7 @@ script_mod! {
         width: Fill height: Fill
         flow: Down
         padding: Inset{top: 16, bottom: 16, left: 24, right: 24}
-        spacing: 12
+        spacing: 8
         draw_bg.color: #xF6F6F8
 
         export_title := Label{
@@ -528,14 +532,76 @@ script_mod! {
             draw_text.text_style.font_size: 22
         }
         export_subtitle := Label{
-            text: "8 格式(markdown/wechat/notion/srt/pack/marp/markmap) — C3 stub"
+            text: "C14 — 8 格式 chip + 大 Card 预览 + 复制按钮(全部 8 端到端可点)"
             draw_text.color: #x8E8E93
             draw_text.text_style.font_size: 12
         }
-        export_placeholder := Label{
-            text: "格式网格 + 大预览 Card + 复制按钮 — C8 落地"
+
+        // 8 格式 chip 横排
+        View{
+            width: Fill height: Fit
+            flow: Right spacing: 4
+            export_f1 := ButtonFlat{ text: "Markdown" height: 28 padding: Inset{left:10,right:10}
+                draw_bg +: { color: #xFF6B35 border_radius: 14.0 } draw_text +: { color: #xFFFFFF } }
+            export_f2 := ButtonFlat{ text: "公众号" height: 28 padding: Inset{left:10,right:10}
+                draw_bg +: { color: #xF6F6F8 border_radius: 14.0 } draw_text +: { color: #x1C1C1E } }
+            export_f3 := ButtonFlat{ text: "Notion" height: 28 padding: Inset{left:10,right:10}
+                draw_bg +: { color: #xF6F6F8 border_radius: 14.0 } draw_text +: { color: #x1C1C1E } }
+            export_f4 := ButtonFlat{ text: "SRT 字幕" height: 28 padding: Inset{left:10,right:10}
+                draw_bg +: { color: #xF6F6F8 border_radius: 14.0 } draw_text +: { color: #x1C1C1E } }
+            export_f5 := ButtonFlat{ text: "视频制作包" height: 28 padding: Inset{left:10,right:10}
+                draw_bg +: { color: #xF6F6F8 border_radius: 14.0 } draw_text +: { color: #x1C1C1E } }
+            export_f6 := ButtonFlat{ text: "Marp 演示" height: 28 padding: Inset{left:10,right:10}
+                draw_bg +: { color: #xF6F6F8 border_radius: 14.0 } draw_text +: { color: #x1C1C1E } }
+            export_f7 := ButtonFlat{ text: "Markmap" height: 28 padding: Inset{left:10,right:10}
+                draw_bg +: { color: #xF6F6F8 border_radius: 14.0 } draw_text +: { color: #x1C1C1E } }
+            export_f8 := ButtonFlat{ text: "全部预览" height: 28 padding: Inset{left:10,right:10}
+                draw_bg +: { color: #xE5E5EA border_radius: 14.0 } draw_text +: { color: #x1C1C1E } }
+        }
+
+        // 适用格式提示
+        export_hint_label := Label{
+            text: "(选中一个格式 → 大 Card 实时渲染 → 复制)"
             draw_text.color: #x8E8E93
-            draw_text.text_style.font_size: 12
+            draw_text.text_style.font_size: 11
+        }
+
+        // 大 Card 预览(白底圆角 10pt 1pt border)
+        View{
+            width: Fill height: 320
+            flow: Down
+            padding: Inset{top: 12, bottom: 12, left: 16, right: 16}
+            draw_bg.color: #xFFFFFF
+            draw_bg.border_radius: 10.0
+            draw_bg.border_size: 1.0
+            draw_bg.border_color: #xE5E5EA
+
+            export_preview_label := Label{
+                text: "(点击上方 8 个 chip 中的任一个,大 Card 会渲染该格式)"
+                draw_text.color: #x8E8E93
+                draw_text.text_style.font_size: 12
+            }
+        }
+
+        // 复制 + 操作行
+        View{
+            width: Fill height: Fit
+            flow: Right spacing: 8
+            export_copy := ButtonFlat{ text: "📋 复制到剪贴板"
+                height: 40 padding: Inset{left:18,right:18}
+                draw_bg +: { color: #xFF6B35 color_hover: #xFF8866 border_radius: 20.0 }
+                draw_text +: { color: #xFFFFFF } }
+            export_back := ButtonFlat{ text: "← 返回"
+                height: 40 padding: Inset{left:18,right:18}
+                draw_bg +: { color: #xF6F6F8 border_radius: 20.0 }
+                draw_text +: { color: #x1C1C1E } }
+        }
+
+        // 当前格式 + 字数状态
+        export_status_label := Label{
+            text: "(空)"
+            draw_text.color: #x8E8E93
+            draw_text.text_style.font_size: 11
         }
     }
 
@@ -1228,10 +1294,168 @@ impl App {
     }
 }
 
-/// Render a serde_json::Value as a compact one-line string for the
+    /// Render a serde_json::Value as a compact one-line string for the
 /// panel result label.
 fn format_value(v: serde_json::Value) -> String {
     serde_json::to_string_pretty(&v).unwrap_or_else(|_| format!("{v:?}"))
+}
+
+// -------- C14: Export 8 格式 chip + 大 Card 预览 + 复制 --------
+
+/// Snapshot the current plan into a `Work` view for export dispatch.
+/// Reuses the demo works[0] if state().current_plan_items is empty
+/// (so the Export screen always has something to render).
+fn current_export_work() -> octostudio_core::Work {
+    use octostudio_core::{ExportFormat, Work};
+    let s = state();
+    let items = if s.current_plan_items.is_empty() {
+        s.works.first().map(|w| w.plan_items.clone()).unwrap_or_default()
+    } else {
+        s.current_plan_items.clone()
+    };
+    let title = if s.current_plan_title.is_empty() {
+        s.works.first().map(|w| w.plan_title.clone()).unwrap_or_else(|| "未命名".to_string())
+    } else { s.current_plan_title.clone() };
+    let summary = if s.current_plan_summary.is_empty() {
+        s.works.first().map(|w| w.plan_summary.clone()).unwrap_or_default()
+    } else { s.current_plan_summary.clone() };
+    let id = if s.current_id.is_empty() { "w-current".into() } else { s.current_id.clone() };
+    let kind = s.plan_kind;
+    Work {
+        id,
+        title,
+        source: s.current_source.clone(),
+        reference: s.current_reference.clone(),
+        content: s.current_content.clone(),
+        style: s.current_style.clone(),
+        prompt: s.current_prompt.clone(),
+        plan_kind: Some(kind),
+        plan_title: s.current_plan_title.clone(),
+        plan_summary: summary,
+        plan_items: items,
+        plan_format: ExportFormat::Markdown,
+        theme: s.current_theme.clone(),
+        composition: s.current_composition.clone(),
+        tags: vec![],
+        history: vec![],
+        updated: 0,
+    }
+}
+
+impl App {
+    fn export_handler(&mut self, cx: &mut Cx, fmt_id: &str) {
+        use octostudio_core::ExportFormat;
+        use octostudio_export::render_plan_as_text;
+        let fmt = match fmt_id {
+            "markdown" => ExportFormat::Markdown,
+            "wechat" => ExportFormat::Wechat,
+            "notion" => ExportFormat::Notion,
+            "srt" => ExportFormat::Srt,
+            "pack" => ExportFormat::Pack,
+            "marp" => ExportFormat::Marp,
+            "markmap" => ExportFormat::Markmap,
+            _ => ExportFormat::Markdown,
+        };
+        let work = current_export_work();
+        let rendered = render_plan_as_text(&work);
+        let label = format!(
+            "格式: {} · {} 字",
+            match fmt {
+                ExportFormat::Markdown => "Markdown",
+                ExportFormat::Wechat => "公众号",
+                ExportFormat::Notion => "Notion",
+                ExportFormat::Srt => "SRT 字幕",
+                ExportFormat::Pack => "视频制作包",
+                ExportFormat::Marp => "Marp 演示",
+                ExportFormat::Markmap => "Markmap 导图",
+            },
+            rendered.chars().count()
+        );
+        let preview = if rendered.chars().count() > 1800 {
+            let mut s: String = rendered.chars().take(1800).collect();
+            s.push_str("\n…(截断 1800 字)");
+            s
+        } else { rendered };
+        self.ui.label(cx, ids!(export_preview_label)).set_text(cx, &preview);
+        self.ui.label(cx, ids!(export_status_label)).set_text(cx, &label);
+        self.ui.label(cx, ids!(export_hint_label)).set_text(
+            cx,
+            &format!("提示: 复制按钮可写入剪贴板 · 当前 plan_kind = {}",
+                     work.plan_kind.unwrap_or(octostudio_core::PlanKind::None).short())
+        );
+        self.ui.redraw(cx);
+    }
+
+    /// 全部预览 — 一次渲染所有 7 个格式, 大 Card 拼起来
+    fn export_all_handler(&mut self, cx: &mut Cx) {
+        use octostudio_core::ExportFormat;
+        use octostudio_export::render_plan_as_text;
+        let work = current_export_work();
+        let mut body = String::new();
+        for fmt in [
+            ExportFormat::Markdown, ExportFormat::Wechat, ExportFormat::Notion,
+            ExportFormat::Srt, ExportFormat::Pack, ExportFormat::Marp,
+            ExportFormat::Markmap,
+        ] {
+            let mut w = work.clone();
+            w.plan_format = fmt;
+            let rendered = render_plan_as_text(&w);
+            let n = rendered.chars().count();
+            body.push_str(&format!("\n── {} ({} 字) ──\n{}\n",
+                match fmt {
+                    ExportFormat::Markdown => "Markdown",
+                    ExportFormat::Wechat => "公众号",
+                    ExportFormat::Notion => "Notion",
+                    ExportFormat::Srt => "SRT 字幕",
+                    ExportFormat::Pack => "视频制作包",
+                    ExportFormat::Marp => "Marp 演示",
+                    ExportFormat::Markmap => "Markmap 导图",
+                },
+                n,
+                if n > 600 {
+                    let mut s: String = rendered.chars().take(600).collect();
+                    s.push_str("…(截断)");
+                    s
+                } else { rendered }
+            ));
+        }
+        // Total body length cap
+        let total_n = body.chars().count();
+        if total_n > 3600 {
+            let mut s: String = body.chars().take(3600).collect();
+            s.push_str("\n…(总 7 格式,截断 3600 字)");
+            body = s;
+        }
+        self.ui.label(cx, ids!(export_preview_label)).set_text(cx, &body);
+        self.ui.label(cx, ids!(export_status_label))
+            .set_text(cx, &format!("全部 7 格式 · 总 {} 字", total_n.min(3600)));
+        self.ui.redraw(cx);
+    }
+
+    /// 复制 — 优先调 cx.copy_to_clipboard(makepad 的剪贴板 API);
+    /// 失败 fallback 到写 tmpdir 文件,status 行明示用户去哪取。
+    fn export_copy_handler(&mut self, cx: &mut Cx) {
+        use octostudio_export::render_plan_as_text;
+        let work = current_export_work();
+        let rendered = render_plan_as_text(&work);
+        let n = rendered.chars().count();
+        cx.copy_to_clipboard(&rendered);
+        // Always also write a tmpdir fallback so the export is never lost.
+        let fallback = std::env::temp_dir().join("octostudio-export.txt");
+        match std::fs::write(&fallback, &rendered) {
+            Ok(_) => {
+                self.ui.label(cx, ids!(export_status_label)).set_text(
+                    cx,
+                    &format!("✓ 复制 {n} 字 → 剪贴板 + 备份 {}", fallback.display())
+                );
+            }
+            Err(e) => {
+                self.ui.label(cx, ids!(export_status_label))
+                    .set_text(cx, &format!("⚠ 剪贴板调用过,备份失败: {e}"));
+            }
+        }
+        self.ui.redraw(cx);
+    }
 }
 
 impl MatchEvent for App {
@@ -1328,6 +1552,10 @@ impl MatchEvent for App {
             self.save_plan_to_works(cx);
             return;
         }
+        if self.ui.button(cx, ids!(plan_to_export)).clicked(actions) {
+            self.goto(cx, Screen::Export);
+            return;
+        }
         // Studio — 7 AI panel chips
         if self.ui.button(cx, ids!(studio_p1)).clicked(actions) {
             self.ai_panel_handler(cx, StudioPanel::GenTitle);
@@ -1382,6 +1610,17 @@ impl MatchEvent for App {
         if self.ui.button(cx, ids!(studio_s6)).clicked(actions) { self.studio_set_style(cx, "续写"); return; }
         if self.ui.button(cx, ids!(studio_s7)).clicked(actions) { self.studio_set_style(cx, "扩写"); return; }
         if self.ui.button(cx, ids!(studio_s8)).clicked(actions) { self.studio_set_style(cx, "小红书体"); return; }
+        // Export — 8 格式 chip + 复制 + 返回
+        if self.ui.button(cx, ids!(export_f1)).clicked(actions) { self.export_handler(cx, "markdown"); return; }
+        if self.ui.button(cx, ids!(export_f2)).clicked(actions) { self.export_handler(cx, "wechat"); return; }
+        if self.ui.button(cx, ids!(export_f3)).clicked(actions) { self.export_handler(cx, "notion"); return; }
+        if self.ui.button(cx, ids!(export_f4)).clicked(actions) { self.export_handler(cx, "srt"); return; }
+        if self.ui.button(cx, ids!(export_f5)).clicked(actions) { self.export_handler(cx, "pack"); return; }
+        if self.ui.button(cx, ids!(export_f6)).clicked(actions) { self.export_handler(cx, "marp"); return; }
+        if self.ui.button(cx, ids!(export_f7)).clicked(actions) { self.export_handler(cx, "markmap"); return; }
+        if self.ui.button(cx, ids!(export_f8)).clicked(actions) { self.export_all_handler(cx); return; }
+        if self.ui.button(cx, ids!(export_copy)).clicked(actions) { self.export_copy_handler(cx); return; }
+        if self.ui.button(cx, ids!(export_back)).clicked(actions) { self.goto(cx, Screen::Plan); return; }
         // Per-item 4 chips × 8 slots — 32 explicit button checks.
         for (i, ids_arr, acts) in [
             (0u64, [ids!(plan_item0_edit), ids!(plan_item0_up), ids!(plan_item0_down), ids!(plan_item0_del)],
