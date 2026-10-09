@@ -80,11 +80,15 @@ fn wipe_parts(frame: &Frame) -> Vec<Svgr<'static>> {
 }
 
 // =========================================================================
-// Subtitles (TTS Chinese narration, v12 sync-fixed) — 21 cues timed to
-// actual TTS speech (not the padded target window). Audio map delays the
-// whole narration.wav by 0.4s, so all cue starts shift +0.4s. Each cue
-// lingers 0.3s after speech ends for natural reading tail.
-// Total: 102.94s of speech out of 168s of padded narration track.
+// Subtitles (TTS Chinese narration, v12.2 sync-fixed) — 24 cues timed to
+// actual TTS speech. Audio map delays the whole narration.wav by 0.4s,
+// so each cue's subtitle starts at cue_start + 0.4. Each cue lingers 0.3s
+// after speech ends for natural reading tail.
+//
+// narration.wav is now generated via ffmpeg adelay+amix (gen_tts.py),
+// so each cue lands at its intended global position. Total file = 199s,
+// matching video length. Last cue (24) ends at 198.59s in subtitle space,
+// video ends at 199.00s — 0.4s of fade-out silence, no subtitle needed.
 // =========================================================================
 const SUBTITLES: &[(f32, f32, &str)] = &[
     // Act 1 — 痛 (0–20s; TTS speech 3.70/5.52/5.74)
@@ -108,13 +112,15 @@ const SUBTITLES: &[(f32, f32, &str)] = &[
     (120.40,127.32, "搜索、标签、AI 历史、批量管理,你的作品库井井有条,跨设备不离手。"),
     (130.40,137.08, "AI 助手七项:起标题、打分、摘要、风格迁移,工坊屏里随调随用。"),
     (140.40,145.38, "十款主题、五种视频预设,风格注入随作品保存。"),
-    // Act 5 — 实证 + 收尾 (cues 18–22 re-aligned to scene starts: 156/161/167/173/179)
+    // Act 5 — 实证 + 收尾 (cues 18–24; 156/161/167/173/179/186/194)
     (156.40,160.78, "三种宿主,真实运行,不是 demo,是真活。"),
     (161.40,165.40, "OctoSense 桌面壳,本机模型真实生成。"),
     (167.40,170.94, "card-host 演示模式,作品展示完整。"),
     (173.40,178.04, "Rinx 小程序,原文二创与场景生成,部分降级。"),
-    // NEW (v12.1) — PlatformsFutureScene at 179–186s (TTS speech 4.78s)
     (179.40,184.48, "未来,桌面、移动、Web,同一份 bundle 处处可跑。"),
+    // NEW (v12.2) — Outro TTS, was visual-only in v12.1
+    (186.40,191.91, "言出法随,意到文成。愿每一个意图,落地即产物。"),
+    (194.40,198.59, "GitHub 开源,Apache 协议,欢迎试用与贡献。"),
 ];
 
 /// Bottom-bar subtitle overlay (landscape 1920x1080). Drawn last so it
@@ -272,9 +278,9 @@ impl Video for PromoVideo<'_> {
     fn audio(&self) -> AudioMap<'_> {
         AudioMap::from([
             AudioTrack::new("bgm199.wav", Second(0.)..Eof).gain_db(-5.0).fade_in(1.5).fade_out(2.5),
-            // v12 voice-over — 0.4s delay; gain 8dB; .voice() flags as primary speech
+            // v12 voice-over — 0.4s delay; gain 14dB pushes voice clearly above BGM (-5dB)
             AudioTrack::new("narration.wav", Second(0.4)..Eof)
-                .gain_db(8.0)
+                .gain_db(14.0)
                 .fade_in(0.05).fade_out(0.5)
                 .voice(),
             // Act 1 → Act 2 觉醒
