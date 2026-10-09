@@ -31,7 +31,7 @@ cargo build --release -p octostudio-app
 ./target/release/octostudio
 ```
 
-窗口打开即就绪:左侧飞书风导航栏(广场/录入/工坊/计划/设置)+ 右侧内容分屏(可滚动)。没有 API key 时
+窗口打开即就绪:左侧飞书风导航栏(可折叠成纯图标 rail、分割条可左右拖动 56-420px)+ 右侧内容分屏(可滚动)。没有 API key 时
 顶部会显示「⚠ 需要 API key → 设置」banner,非 AI 功能照常可用。
 
 **窗口尺寸**:没有 `--size` 参数。要改尺寸,编辑
