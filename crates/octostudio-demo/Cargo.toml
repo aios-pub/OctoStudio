@@ -1,0 +1,13 @@
+[package]
+name        = "octostudio-demo"
+description = "Offline fallback demo data — 9 plan_kind datasets + 2 demo works, for no-API-key users"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[dependencies]
+octostudio-core = { path = "../octostudio-core" }
+serde           = { workspace = true }
+serde_json      = { workspace = true }

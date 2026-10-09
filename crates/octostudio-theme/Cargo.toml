@@ -1,0 +1,10 @@
+[package]
+name        = "octostudio-theme"
+description = "Visual tokens — color, font, spacing, radius. Pure constants, no deps"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[dependencies]

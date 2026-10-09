@@ -1,0 +1,11 @@
+[package]
+name        = "octostudio-export"
+description = "Export format renderers — 8 formats (markdown, wechat, notion, srt, pack, marp, markmap)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[dependencies]
+octostudio-core = { path = "../octostudio-core" }

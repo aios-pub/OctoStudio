@@ -1,0 +1,26 @@
+[package]
+name        = "octostudio-app"
+description = "OctoStudio native Makepad app — main entry, App glue, 5-screen shell"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "octostudio"
+path = "src/main.rs"
+
+[dependencies]
+makepad-widgets       = { workspace = true }
+octostudio-core       = { path = "../octostudio-core" }
+octostudio-theme      = { path = "../octostudio-theme" }
+octostudio-storage    = { path = "../octostudio-storage" }
+octostudio-ai         = { path = "../octostudio-ai" }
+octostudio-export     = { path = "../octostudio-export" }
+octostudio-render     = { path = "../octostudio-render" }
+octostudio-demo       = { path = "../octostudio-demo" }
+serde                 = { workspace = true }
+serde_json            = { workspace = true }
+anyhow                = { workspace = true }
+chrono                = { workspace = true }

@@ -1,0 +1,45 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/octostudio-app",
+    "crates/octostudio-core",
+    "crates/octostudio-theme",
+    "crates/octostudio-storage",
+    "crates/octostudio-ai",
+    "crates/octostudio-export",
+    "crates/octostudio-render",
+    "crates/octostudio-demo",
+]
+
+[workspace.package]
+version = "0.6.0"
+edition = "2021"
+license = "Apache-2.0"
+authors = ["OctoStudio <aios.pub@octostudio.app>"]
+publish = false
+
+# Resolve makepad-widgets to the local checkout at /Volumes/PSSD/CodeProjects/makepad.
+# From this Cargo.toml (octostudio/Cargo.toml), ../makepad/widgets is the correct path.
+[workspace.dependencies]
+makepad-widgets = { path = "../makepad/widgets", version = "2.0.0" }
+serde      = { version = "1", features = ["derive"] }
+serde_json = "1"
+anyhow     = "1"
+thiserror  = "1"
+chrono     = { version = "0.4", default-features = false, features = ["serde", "clock"] }
+ureq       = { version = "3", default-features = false, features = ["json", "rustls"] }
+url        = "2"
+dirs       = "5"
+
+# Profiling / release profile — match card-host so the app feels snappy.
+[profile.release]
+opt-level = 3
+lto       = "thin"
+codegen-units = 1
+panic     = "abort"
+strip     = "symbols"
+
+[profile.dev]
+opt-level = 1
+debug     = 1
+incremental = true

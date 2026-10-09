@@ -1,0 +1,19 @@
+[package]
+name        = "octostudio-render"
+description = "Native Makepad widgets — 5 screens (Home/Compose/Studio/Plan/Export) + Settings"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[dependencies]
+makepad-widgets   = { workspace = true }
+octostudio-core   = { path = "../octostudio-core" }
+octostudio-theme  = { path = "../octostudio-theme" }
+octostudio-ai     = { path = "../octostudio-ai" }
+octostudio-storage = { path = "../octostudio-storage" }
+octostudio-export = { path = "../octostudio-export" }
+octostudio-demo   = { path = "../octostudio-demo" }
+serde             = { workspace = true }
+serde_json        = { workspace = true }

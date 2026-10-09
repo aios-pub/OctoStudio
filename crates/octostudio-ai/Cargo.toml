@@ -1,0 +1,17 @@
+[package]
+name        = "octostudio-ai"
+description = "Real AI clients — Agnes 3.0 Flash (text), Agnes 2.5 Flash (image), Agnes 2.5 (video)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+publish.workspace = true
+
+[dependencies]
+octostudio-core = { path = "../octostudio-core" }
+ureq            = { workspace = true }
+serde           = { workspace = true }
+serde_json      = { workspace = true }
+anyhow          = { workspace = true }
+url             = { workspace = true }
+chrono          = { workspace = true }
