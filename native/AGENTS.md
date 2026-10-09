@@ -5,9 +5,8 @@ This is the Rust + Makepad rewrite of OctoStudio. Read `README.md` first.
 ## Build / run
 
 ```bash
-cd native
-cargo build --release
-./target/release/octostudio --port 8141
+cargo build --release                      # from the repo root (workspace root)
+./target/release/octostudio --remote=8141  # + HTTP debug bridge
 ```
 
 If a build fails, read the error carefully — the `script_mod!` macro
@@ -38,7 +37,9 @@ must be inlined into a single `script_mod!` block (see `app.rs`).
 
 ## Testing
 
-- 25 unit tests across 6 crates (`cargo test`).
-- For end-to-end visual verification, use Makepad Studio:
-  `curl 127.0.0.1:8141/snap` (widget tree) and
-  `curl '127.0.0.1:8141/g?raw=1' -o shot.png` (PNG capture).
+- 31 unit tests across 7 crates (`cargo test`).
+- For end-to-end visual verification, launch with `--remote=8141` and use
+  the makepad remote bridge:
+  `curl '127.0.0.1:8141/snap?q='` (clickable widget rects) and
+  `curl '127.0.0.1:8141/g?raw=1' -o shot.png` (PNG capture);
+  end sessions with `curl 127.0.0.1:8141/gq` (grab + quit).

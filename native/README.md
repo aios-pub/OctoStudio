@@ -13,12 +13,11 @@ to three real AI providers on [Agnes](https://www.agnes-ai.com):
 
 ## Workspace layout
 
-8 crates with clear responsibility division, sharing types via
-`octostudio-core` / `octostudio-theme`:
+8 crates at the repo root with clear responsibility division, sharing
+types via `octostudio-core` / `octostudio-theme`:
 
 ```
-native/
-├── Cargo.toml              # workspace root, makepad-widgets via path
+.                                # repo root = workspace root (Cargo.toml here)
 └── crates/
     ├── octostudio-app      # binary — main entry, App glue, 5-screen shell, TabBar
     ├── octostudio-core     # types — Work, PlanItem, Composition, Screen, PlanKind,
@@ -37,8 +36,8 @@ native/
 ## Build
 
 ```bash
-cd native
-cargo build --release      # produces ./target/release/octostudio
+cargo build --release      # from the repo root (this workspace's root Cargo.toml)
+./target/release/octostudio --remote=8141
 ```
 
 The `makepad-widgets` dependency resolves via path to
@@ -47,22 +46,26 @@ The `makepad-widgets` dependency resolves via path to
 ## Run
 
 ```bash
-./target/release/octostudio                                 # default 1280x800
-./target/release/octostudio --size 800x1200 --port 8141       # phone form factor
+./target/release/octostudio                                  # default 1280x800 (hard-coded in app.rs startup)
+./target/release/octostudio --remote=8141                    # + HTTP debug bridge on 127.0.0.1:8141
 ```
 
-### Makepad Studio bridge
+Window size is `window.inner_size: vec2(1280, 800)` in
+`crates/octostudio-app/src/app.rs` — no CLI flag; edit and rebuild to change.
 
-Every binary listens on `--port 8141` by default and exposes the full
-makepad-remote surface:
+Full run/debug/Studio guide: [`../quick_start.md`](../quick_start.md).
+
+### Remote debug bridge (makepad built-in)
+
+Every binary can expose a localhost HTTP control surface with `--remote`
+(`platform/src/remote.rs` in makepad). All routes are GET:
 
 ```bash
-# Window state
-curl 127.0.0.1:8141/snap                       # list widget tree
-curl '127.0.0.1:8141/g?raw=1' -o shot.png      # capture PNG
-curl '127.0.0.1:8141/click?x=400&y=600'        # tap (drives actions)
-curl '127.0.0.1:8141/t?text=hello'             # type into focused field
-curl '127.0.0.1:8141/quit'                     # graceful exit
+curl 127.0.0.1:8141/snap?q=          # widget rects, ready to click
+curl '127.0.0.1:8141/g?raw=1' -o shot.png   # capture PNG
+curl '127.0.0.1:8141/click?x=400&y=600&wait=1'  # tap (real event path)
+curl '127.0.0.1:8141/t?text=hello'   # type into focused field
+curl 127.0.0.1:8141/gq               # grab + graceful quit
 ```
 
 ## First launch
@@ -91,7 +94,7 @@ curl '127.0.0.1:8141/quit'                     # graceful exit
 ## Tests
 
 ```bash
-cargo test                                  # 25 passing across all crates
+cargo test                                  # 31 passing across all crates
 cargo test -p octostudio-ai                 # text/image/video clients
 cargo test -p octostudio-storage            # works.json / config.json / usage.json
 cargo test -p octostudio-export             # 8 format renderers (srt time code roundtrip)
@@ -103,10 +106,8 @@ cargo test -p octostudio-export             # 8 format renderers (srt time code 
 - AI calls are **synchronous on the UI thread** (1-30s blocking). A
   future C7.1 will move chat to `cx.http_request` streaming + a
   `Cx::start_timeout(2.0, repeat)` poll loop for video.
-- Plan-view work-item list shows placeholders; full edit / move /
-  delete with image buttons is a v0.6.1 follow-up.
-- Bundle still exists in `bundle/` for the card-host era but is no
-  longer built or signed — the legacy path is preserved for diff only.
+- Splash-era files (`bundle/`, old docs, promo media) were removed from
+  the repo in v0.6 — see the history note in the root `README.md`.
 
 ## Migration from v0.5-alpha-ui-polish
 
