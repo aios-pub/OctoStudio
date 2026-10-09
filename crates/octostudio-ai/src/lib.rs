@@ -15,10 +15,12 @@ pub mod client;
 pub mod image;
 pub mod prompts;
 pub mod text;
+pub mod video;
 
 pub use client::{HttpClient, HttpResponse};
 pub use image::ImageClient;
 pub use text::{ChatMessage, ChatRequest, ChatResponse, TextClient};
+pub use video::{VideoClient, VideoCreateRequest, VideoCreateResponse, VideoPollResponse, VideoStatus};
 
 /// Agnes API hub. Override with `OCTOSTUDIO_AGNES_BASE_URL` for testing.
 pub const DEFAULT_BASE_URL: &str = "https://apihub.agnes-ai.com/v1";

@@ -61,6 +61,18 @@ script_mod! {
                 color: #xFFFFFF
             }
         }
+        home_test_video := ButtonFlat{
+            text: "🎬 测试 AI 合成视频(需 API key,等 30s)"
+            height: 36 padding: Inset{left: 14, right: 14}
+            draw_bg +: {
+                color: #x4A6FA5
+                color_hover: #x6A8FC5
+                border_radius: 18.0
+            }
+            draw_text +: {
+                color: #xFFFFFF
+            }
+        }
         home_placeholder := Label{
             text: "works 列表 / 搜索 / 排序 chip / 场景网格 — 后续 commit"
             draw_text.color: #x8E8E93
@@ -364,6 +376,10 @@ impl MatchEvent for App {
             self.test_image(cx);
             return;
         }
+        if self.ui.button(cx, ids!(home_test_video)).clicked(actions) {
+            self.test_video(cx);
+            return;
+        }
     }
 }
 
@@ -424,6 +440,54 @@ impl App {
             }
             Err(e) => {
                 let msg = format!("✗ 配图失败: {e}");
+                self.ui.label(cx, ids!(status_label)).set_text(cx, &msg);
+            }
+        }
+        self.ui.redraw(cx);
+    }
+
+    /// Test the video API (C7). Reads the API key, calls
+    /// `Agnes 2.5 create_text` (returns a video_id), then polls every
+    /// 2s up to a 30s budget. Surfaces the result in the status label.
+    fn test_video(&mut self, cx: &mut Cx) {
+        use std::time::Duration;
+        use octostudio_ai::video::VideoStatus;
+        use octostudio_ai::VideoClient;
+        let key = state().api_key.clone();
+        let key = match key {
+            Some(k) if !k.is_empty() => k,
+            _ => {
+                self.ui.label(cx, ids!(status_label))
+                    .set_text(cx, "⚠ 未设置 API key — 打开 设置 输入");
+                return;
+            }
+        };
+        let client = VideoClient::new(key);
+        self.ui.label(cx, ids!(status_label))
+            .set_text(cx, "🎬 视频提交中…");
+        self.ui.redraw(cx);
+        match client.create_and_wait(
+            "a slow cinematic pan across a misty mountain ridge at sunrise",
+            "4",
+            "720P",
+            "16:9",
+            Duration::from_secs(2),
+            Duration::from_secs(30),
+        ) {
+            Ok(VideoStatus::Completed(url)) => {
+                let msg = format!("✓ 视频 URL: {}", &url[..url.len().min(80)]);
+                self.ui.label(cx, ids!(status_label)).set_text(cx, &msg);
+            }
+            Ok(VideoStatus::Failed(e)) => {
+                let msg = format!("✗ 视频生成失败: {e}");
+                self.ui.label(cx, ids!(status_label)).set_text(cx, &msg);
+            }
+            Ok(other) => {
+                let msg = format!("… 视频仍在: {:?}", other);
+                self.ui.label(cx, ids!(status_label)).set_text(cx, &msg);
+            }
+            Err(e) => {
+                let msg = format!("✗ 视频调用失败: {e}");
                 self.ui.label(cx, ids!(status_label)).set_text(cx, &msg);
             }
         }
