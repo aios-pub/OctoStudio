@@ -6,7 +6,7 @@
 
 use std::collections::BTreeMap;
 
-use octostudio_core::{PlanItem, PlanKind, Work};
+use octostudio_core::{ExportFormat, PlanItem, PlanKind, Work};
 
 /// Build the first-launch demo works list. Returns a `Vec<Work>` with
 /// exactly 2 entries (a 视频分镜 example and a 图文文章 example).
@@ -57,6 +57,7 @@ fn demo_work_video() -> Work {
         style: "改写".into(),
         prompt: "夏日海边慢生活,温暖散文风".into(),
         plan_kind: Some(PlanKind::Video),
+        plan_format: ExportFormat::Markdown,
         plan_title: "夏日海边慢生活".into(),
         plan_summary: "3 镜分镜 + AI 合成建议 + SRT 字幕 + 视频制作包".into(),
         plan_items: vec![
@@ -114,6 +115,7 @@ fn demo_work_image() -> Work {
         style: "改写".into(),
         prompt: "夏日海边慢生活,温暖散文风".into(),
         plan_kind: Some(PlanKind::Image),
+        plan_format: ExportFormat::Markdown,
         plan_title: "夏日海边慢生活图文".into(),
         plan_summary: "3 段图文 + 配图 prompt 列表".into(),
         plan_items: vec![

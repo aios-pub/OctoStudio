@@ -9,7 +9,7 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::enums::PlanKind;
+use crate::enums::{ExportFormat, PlanKind};
 
 /// A single works.json entry. Persisted across launches.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -25,6 +25,7 @@ pub struct Work {
     pub plan_title: String,
     pub plan_summary: String,
     pub plan_items: Vec<PlanItem>,
+    pub plan_format: ExportFormat,
     pub theme: Option<String>,
     pub composition: Option<Composition>,
     pub tags: Vec<String>,
@@ -46,6 +47,7 @@ impl Default for Work {
             plan_title: String::new(),
             plan_summary: String::new(),
             plan_items: Vec::new(),
+            plan_format: ExportFormat::Markdown,
             theme: None,
             composition: None,
             tags: Vec::new(),

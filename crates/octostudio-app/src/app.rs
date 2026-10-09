@@ -73,6 +73,18 @@ script_mod! {
                 color: #xFFFFFF
             }
         }
+        home_test_export := ButtonFlat{
+            text: "📄 测试导出(8 格式)"
+            height: 36 padding: Inset{left: 14, right: 14}
+            draw_bg +: {
+                color: #x2E7D5B
+                color_hover: #x4E9D7B
+                border_radius: 18.0
+            }
+            draw_text +: {
+                color: #xFFFFFF
+            }
+        }
         home_placeholder := Label{
             text: "works 列表 / 搜索 / 排序 chip / 场景网格 — 后续 commit"
             draw_text.color: #x8E8E93
@@ -380,6 +392,10 @@ impl MatchEvent for App {
             self.test_video(cx);
             return;
         }
+        if self.ui.button(cx, ids!(home_test_export)).clicked(actions) {
+            self.test_export(cx);
+            return;
+        }
     }
 }
 
@@ -491,6 +507,48 @@ impl App {
                 self.ui.label(cx, ids!(status_label)).set_text(cx, &msg);
             }
         }
+        self.ui.redraw(cx);
+    }
+
+    /// Test the export renderers (C8). Renders the first demo work in
+    /// 6 formats and surfaces a short status line saying which one
+    /// produced the most output.
+    fn test_export(&mut self, cx: &mut Cx) {
+        use octostudio_core::ExportFormat;
+        use octostudio_export::render_plan_as_text;
+        let works = state().works.clone();
+        if works.is_empty() {
+            self.ui.label(cx, ids!(status_label))
+                .set_text(cx, "⚠ 无作品可导出");
+            return;
+        }
+        let work = works[0].clone();
+        let formats = [
+            ExportFormat::Markdown,
+            ExportFormat::Wechat,
+            ExportFormat::Notion,
+            ExportFormat::Srt,
+            ExportFormat::Pack,
+            ExportFormat::Marp,
+        ];
+        let mut sizes: Vec<(ExportFormat, usize)> = formats
+            .iter()
+            .map(|f| {
+                let prev = work.plan_format;
+                let mut w = work.clone();
+                w.plan_format = *f;
+                let s = render_plan_as_text(&w);
+                w.plan_format = prev; // restore (work is consumed otherwise)
+                (*f, s.len())
+            })
+            .collect();
+        sizes.sort_by(|a, b| b.1.cmp(&a.1));
+        let summary: Vec<String> = sizes
+            .iter()
+            .map(|(f, n)| format!("{:?}: {}B", f, n))
+            .collect();
+        let msg = format!("✓ 导出渲染: {}", summary.join(" · "));
+        self.ui.label(cx, ids!(status_label)).set_text(cx, &msg);
         self.ui.redraw(cx);
     }
 }

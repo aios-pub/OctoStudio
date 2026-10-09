@@ -126,6 +126,7 @@ fn legacy_to_v6(l: LegacyWork) -> Work {
         plan_title: l.plan_title,
         plan_summary: l.plan_summary,
         plan_items,
+        plan_format: octostudio_core::ExportFormat::Markdown,
         theme: l.theme,
         composition: l.composition.map(|c| Composition {
             transition_style: c.transition_style,
