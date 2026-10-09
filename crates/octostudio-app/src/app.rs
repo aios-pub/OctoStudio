@@ -260,7 +260,7 @@ script_mod! {
         width: Fill height: Fill
         flow: Down
         padding: Inset{top: 16, bottom: 16, left: 24, right: 24}
-        spacing: 12
+        spacing: 10
         draw_bg.color: #xF6F6F8
 
         plan_title := Label{
@@ -269,7 +269,7 @@ script_mod! {
             draw_text.text_style.font_size: 22
         }
         plan_subtitle := Label{
-            text: "C11 — 计划条目 + 每条「AI 配图」chip(占位;真实生成在 C12)"
+            text: "C12 — 每条 6 字段 inline editor + 增/删/上/下 + works.json 持久化"
             draw_text.color: #x8E8E93
             draw_text.text_style.font_size: 12
         }
@@ -278,27 +278,154 @@ script_mod! {
             draw_text.color: #x1C1C1E
             draw_text.text_style.font_size: 14
         }
+
+        // Per-item card(7 items hard-coded for compile-time; for C12 we
+        // render text-only and let the editor show fields when toggled.
+        // Real PortalList with N items is C12.1.)
         plan_list := View{
             width: Fill height: Fit
             flow: Down spacing: 8
-            plan_list_placeholder := Label{
-                text: "在「录入」屏选场景 + 点「生成」后,条目会出现在这里。"
-                draw_text.color: #x8E8E93
-                draw_text.text_style.font_size: 12
+            plan_item0 := View{ width: Fill height: Fit flow: Down padding: Inset{top:8,bottom:8,left:14,right:14} spacing: 6
+                draw_bg.color: #xFFFFFF draw_bg.border_radius: 10.0
+                plan_item0_header := View{ width: Fill height: Fit flow: Right spacing: 6
+                    plan_item0_idx := Label{ text: "第 1 条" draw_text.color: #x1C1C1E draw_text.text_style.font_size: 13 }
+                    plan_item0_edit := ButtonFlat{ text: "✎ 编辑" height: 24 padding: Inset{left:8,right:8}
+                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                    plan_item0_up := ButtonFlat{ text: "↑ 上移" height: 24 padding: Inset{left:8,right:8}
+                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                    plan_item0_down := ButtonFlat{ text: "↓ 下移" height: 24 padding: Inset{left:8,right:8}
+                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                    plan_item0_del := ButtonFlat{ text: "🗑 删除" height: 24 padding: Inset{left:8,right:8}
+                        draw_bg +: { color: #xB3541E border_radius: 12.0 } draw_text +: { color: #xFFFFFF } }
+                }
+                plan_item0_body := Label{ text: "(空)" draw_text.color: #x8E8E93 draw_text.text_style.font_size: 12 }
+            }
+            plan_item1 := View{ width: Fill height: Fit flow: Down padding: Inset{top:8,bottom:8,left:14,right:14} spacing: 6
+                draw_bg.color: #xFFFFFF draw_bg.border_radius: 10.0
+                plan_item1_header := View{ width: Fill height: Fit flow: Right spacing: 6
+                    plan_item1_idx := Label{ text: "第 2 条" draw_text.color: #x1C1C1E draw_text.text_style.font_size: 13 }
+                    plan_item1_edit := ButtonFlat{ text: "✎ 编辑" height: 24 padding: Inset{left:8,right:8}
+                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                    plan_item1_up := ButtonFlat{ text: "↑ 上移" height: 24 padding: Inset{left:8,right:8}
+                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                    plan_item1_down := ButtonFlat{ text: "↓ 下移" height: 24 padding: Inset{left:8,right:8}
+                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                    plan_item1_del := ButtonFlat{ text: "🗑 删除" height: 24 padding: Inset{left:8,right:8}
+                        draw_bg +: { color: #xB3541E border_radius: 12.0 } draw_text +: { color: #xFFFFFF } }
+                }
+                plan_item1_body := Label{ text: "(空)" draw_text.color: #x8E8E93 draw_text.text_style.font_size: 12 }
+            }
+            plan_item2 := View{ width: Fill height: Fit flow: Down padding: Inset{top:8,bottom:8,left:14,right:14} spacing: 6
+                draw_bg.color: #xFFFFFF draw_bg.border_radius: 10.0
+                plan_item2_header := View{ width: Fill height: Fit flow: Right spacing: 6
+                    plan_item2_idx := Label{ text: "第 3 条" draw_text.color: #x1C1C1E draw_text.text_style.font_size: 13 }
+                    plan_item2_edit := ButtonFlat{ text: "✎ 编辑" height: 24 padding: Inset{left:8,right:8}
+                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                    plan_item2_up := ButtonFlat{ text: "↑ 上移" height: 24 padding: Inset{left:8,right:8}
+                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                    plan_item2_down := ButtonFlat{ text: "↓ 下移" height: 24 padding: Inset{left:8,right:8}
+                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                    plan_item2_del := ButtonFlat{ text: "🗑 删除" height: 24 padding: Inset{left:8,right:8}
+                        draw_bg +: { color: #xB3541E border_radius: 12.0 } draw_text +: { color: #xFFFFFF } }
+                }
+                plan_item2_body := Label{ text: "(空)" draw_text.color: #x8E8E93 draw_text.text_style.font_size: 12 }
+            }
+            plan_item3 := View{ width: Fill height: Fit flow: Down padding: Inset{top:8,bottom:8,left:14,right:14} spacing: 6
+                draw_bg.color: #xFFFFFF draw_bg.border_radius: 10.0
+                plan_item3_header := View{ width: Fill height: Fit flow: Right spacing: 6
+                    plan_item3_idx := Label{ text: "第 4 条" draw_text.color: #x1C1C1E draw_text.text_style.font_size: 13 }
+                    plan_item3_edit := ButtonFlat{ text: "✎ 编辑" height: 24 padding: Inset{left:8,right:8}
+                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                    plan_item3_up := ButtonFlat{ text: "↑ 上移" height: 24 padding: Inset{left:8,right:8}
+                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                    plan_item3_down := ButtonFlat{ text: "↓ 下移" height: 24 padding: Inset{left:8,right:8}
+                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                    plan_item3_del := ButtonFlat{ text: "🗑 删除" height: 24 padding: Inset{left:8,right:8}
+                        draw_bg +: { color: #xB3541E border_radius: 12.0 } draw_text +: { color: #xFFFFFF } }
+                }
+                plan_item3_body := Label{ text: "(空)" draw_text.color: #x8E8E93 draw_text.text_style.font_size: 12 }
+            }
+            plan_item4 := View{ width: Fill height: Fit flow: Down padding: Inset{top:8,bottom:8,left:14,right:14} spacing: 6
+                draw_bg.color: #xFFFFFF draw_bg.border_radius: 10.0
+                plan_item4_header := View{ width: Fill height: Fit flow: Right spacing: 6
+                    plan_item4_idx := Label{ text: "第 5 条" draw_text.color: #x1C1C1E draw_text.text_style.font_size: 13 }
+                    plan_item4_edit := ButtonFlat{ text: "✎ 编辑" height: 24 padding: Inset{left:8,right:8}
+                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                    plan_item4_up := ButtonFlat{ text: "↑ 上移" height: 24 padding: Inset{left:8,right:8}
+                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                    plan_item4_down := ButtonFlat{ text: "↓ 下移" height: 24 padding: Inset{left:8,right:8}
+                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                    plan_item4_del := ButtonFlat{ text: "🗑 删除" height: 24 padding: Inset{left:8,right:8}
+                        draw_bg +: { color: #xB3541E border_radius: 12.0 } draw_text +: { color: #xFFFFFF } }
+                }
+                plan_item4_body := Label{ text: "(空)" draw_text.color: #x8E8E93 draw_text.text_style.font_size: 12 }
+            }
+            plan_item5 := View{ width: Fill height: Fit flow: Down padding: Inset{top:8,bottom:8,left:14,right:14} spacing: 6
+                draw_bg.color: #xFFFFFF draw_bg.border_radius: 10.0
+                plan_item5_header := View{ width: Fill height: Fit flow: Right spacing: 6
+                    plan_item5_idx := Label{ text: "第 6 条" draw_text.color: #x1C1C1E draw_text.text_style.font_size: 13 }
+                    plan_item5_edit := ButtonFlat{ text: "✎ 编辑" height: 24 padding: Inset{left:8,right:8}
+                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                    plan_item5_up := ButtonFlat{ text: "↑ 上移" height: 24 padding: Inset{left:8,right:8}
+                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                    plan_item5_down := ButtonFlat{ text: "↓ 下移" height: 24 padding: Inset{left:8,right:8}
+                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                    plan_item5_del := ButtonFlat{ text: "🗑 删除" height: 24 padding: Inset{left:8,right:8}
+                        draw_bg +: { color: #xB3541E border_radius: 12.0 } draw_text +: { color: #xFFFFFF } }
+                }
+                plan_item5_body := Label{ text: "(空)" draw_text.color: #x8E8E93 draw_text.text_style.font_size: 12 }
+            }
+            plan_item6 := View{ width: Fill height: Fit flow: Down padding: Inset{top:8,bottom:8,left:14,right:14} spacing: 6
+                draw_bg.color: #xFFFFFF draw_bg.border_radius: 10.0
+                plan_item6_header := View{ width: Fill height: Fit flow: Right spacing: 6
+                    plan_item6_idx := Label{ text: "第 7 条" draw_text.color: #x1C1C1E draw_text.text_style.font_size: 13 }
+                    plan_item6_edit := ButtonFlat{ text: "✎ 编辑" height: 24 padding: Inset{left:8,right:8}
+                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                    plan_item6_up := ButtonFlat{ text: "↑ 上移" height: 24 padding: Inset{left:8,right:8}
+                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                    plan_item6_down := ButtonFlat{ text: "↓ 下移" height: 24 padding: Inset{left:8,right:8}
+                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                    plan_item6_del := ButtonFlat{ text: "🗑 删除" height: 24 padding: Inset{left:8,right:8}
+                        draw_bg +: { color: #xB3541E border_radius: 12.0 } draw_text +: { color: #xFFFFFF } }
+                }
+                plan_item6_body := Label{ text: "(空)" draw_text.color: #x8E8E93 draw_text.text_style.font_size: 12 }
+            }
+            plan_item7 := View{ width: Fill height: Fit flow: Down padding: Inset{top:8,bottom:8,left:14,right:14} spacing: 6
+                draw_bg.color: #xFFFFFF draw_bg.border_radius: 10.0
+                plan_item7_header := View{ width: Fill height: Fit flow: Right spacing: 6
+                    plan_item7_idx := Label{ text: "第 8 条" draw_text.color: #x1C1C1E draw_text.text_style.font_size: 13 }
+                    plan_item7_edit := ButtonFlat{ text: "✎ 编辑" height: 24 padding: Inset{left:8,right:8}
+                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                    plan_item7_up := ButtonFlat{ text: "↑ 上移" height: 24 padding: Inset{left:8,right:8}
+                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                    plan_item7_down := ButtonFlat{ text: "↓ 下移" height: 24 padding: Inset{left:8,right:8}
+                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                    plan_item7_del := ButtonFlat{ text: "🗑 删除" height: 24 padding: Inset{left:8,right:8}
+                        draw_bg +: { color: #xB3541E border_radius: 12.0 } draw_text +: { color: #xFFFFFF } }
+                }
+                plan_item7_body := Label{ text: "(空)" draw_text.color: #x8E8E93 draw_text.text_style.font_size: 12 }
             }
         }
-        // 「AI 配图」按钮 — 真实调用 ImageClient::generate
-        plan_gen_image := ButtonFlat{
-            text: "🎨 AI 配图(按当前 plan_items 第一个 image_prompt)"
-            height: 36 padding: Inset{left: 14, right: 14}
-            draw_bg +: { color: #xFF6B35 color_hover: #xFF8866 border_radius: 18.0 }
-            draw_text +: { color: #xFFFFFF }
+
+        // Action row
+        View{
+            width: Fill height: Fit
+            flow: Right spacing: 8
+            plan_item_add := ButtonFlat{ text: "➕ 新增一条"
+                height: 36 padding: Inset{left:14,right:14}
+                draw_bg +: { color: #x2E7D5B color_hover: #x4E9D7B border_radius: 18.0 }
+                draw_text +: { color: #xFFFFFF } }
+            plan_save_works := ButtonFlat{ text: "💾 保存到 works.json"
+                height: 36 padding: Inset{left:14,right:14}
+                draw_bg +: { color: #xFF6B35 color_hover: #xFF8866 border_radius: 18.0 }
+                draw_text +: { color: #xFFFFFF } }
+            plan_gen_image := ButtonFlat{ text: "🎨 AI 配图(首条 image_prompt)"
+                height: 36 padding: Inset{left:14,right:14}
+                draw_bg +: { color: #x4A6FA5 color_hover: #x6A8FC5 border_radius: 18.0 }
+                draw_text +: { color: #xFFFFFF } }
         }
-        plan_image_url_label := Label{
-            text: "(尚未配图)"
-            draw_text.color: #x8E8E93
-            draw_text.text_style.font_size: 11
-        }
+        plan_image_url_label := Label{ text: "(尚未配图)"
+            draw_text.color: #x8E8E93 draw_text.text_style.font_size: 11 }
     }
 
     let ExportView = View{
@@ -582,6 +709,212 @@ impl App {
             .set_visible(cx, mode == Screen::Settings);
         self.ui.redraw(cx);
     }
+
+    // -------- C12: Plan item actions (add / del / up / down / edit) --------
+
+    /// Plan — dispatch one chip action (edit / up / down / del) on the
+    /// plan_item at the given index (0..8). State is mutated, then the
+    /// 8 body labels are refreshed. Persistence is decoupled — the user
+    /// must click `save_plan_to_works` to write to disk.
+    fn plan_item_action(&mut self, cx: &mut Cx, idx: u64, action: PlanItemAction) {
+        match action {
+            PlanItemAction::Edit => self.item_start_edit(cx, idx),
+            PlanItemAction::Up => self.item_move(cx, idx, -1),
+            PlanItemAction::Down => self.item_move(cx, idx, 1),
+            PlanItemAction::Del => self.item_delete(cx, idx),
+        }
+    }
+
+    /// Plan — 「➕ 新增一条」button. Push a `blank_item(kind)` onto
+    /// `current_plan_items` (capped at 16; splash uses 16 as max).
+    fn item_add(&mut self, cx: &mut Cx) {
+        use octostudio_core::blank_item;
+        let kind = state().plan_kind;
+        let next = state().next_seq();
+        {
+            let mut s = state();
+            if s.current_plan_items.len() < 16 {
+                s.current_plan_items.push(blank_item(kind, next));
+            } else {
+                self.ui.label(cx, ids!(status_label))
+                    .set_text(cx, "⚠ 最多 16 条");
+                return;
+            }
+        }
+        self.ui.label(cx, ids!(status_label))
+            .set_text(cx, &format!("✓ 已新增 1 条,共 {} 条", state().current_plan_items.len()));
+        self.refresh_plan_list(cx);
+    }
+
+    /// Plan — 「🗑 删除」chip on item `idx`.
+    fn item_delete(&mut self, cx: &mut Cx, idx: u64) {
+        let n = state().current_plan_items.len();
+        if idx as usize >= n {
+            self.ui.label(cx, ids!(status_label))
+                .set_text(cx, "⚠ 越界");
+            return;
+        }
+        {
+            let mut s = state();
+            s.current_plan_items.remove(idx as usize);
+        }
+        self.ui.label(cx, ids!(status_label))
+            .set_text(cx, &format!("✓ 已删第 {} 条,剩 {} 条", idx + 1, state().current_plan_items.len()));
+        self.refresh_plan_list(cx);
+    }
+
+    /// Plan — 「↑ 上移」 / 「↓ 下移」chip on item `idx`. `dir` is -1 or 1.
+    fn item_move(&mut self, cx: &mut Cx, idx: u64, dir: i32) {
+        let n = state().current_plan_items.len() as i64;
+        let new_idx = idx as i64 + dir as i64;
+        if new_idx < 0 || new_idx >= n {
+            self.ui.label(cx, ids!(status_label))
+                .set_text(cx, &format!("⚠ 已到{}端,无法移动",
+                    if dir < 0 { "顶" } else { "底" }));
+            return;
+        }
+        {
+            let mut s = state();
+            let items = &mut s.current_plan_items;
+            items.swap(idx as usize, new_idx as usize);
+        }
+        let dir_label = if dir < 0 { "上移" } else { "下移" };
+        self.ui.label(cx, ids!(status_label))
+            .set_text(cx, &format!("✓ 第 {} 条{} 1 位", idx + 1, dir_label));
+        self.refresh_plan_list(cx);
+    }
+
+    /// Plan — 「✎ 编辑」chip on item `idx`. Sets `editing_k = idx` so the
+    /// next pass of `refresh_plan_list` can show the editor card. (C12
+    /// simplification: no live TextInput; shows the values as text and
+    /// logs the action; real TextInput card is C12.1.)
+    fn item_start_edit(&mut self, cx: &mut Cx, idx: u64) {
+        state().editing_k = idx as i64;
+        let summary = match state().current_plan_items.get(idx as usize) {
+            Some(it) => {
+                use octostudio_core::item_fields;
+                let fields = item_fields(state().plan_kind);
+                let mut line = String::new();
+                for f in &fields {
+                    let v = it.get(&f.key);
+                    line.push_str(&format!("{}={} | ", f.label, v));
+                }
+                line
+            }
+            None => "(无)".to_string(),
+        };
+        self.ui.label(cx, ids!(status_label))
+            .set_text(cx, &format!("✎ 进入编辑第 {} 条: {}", idx + 1, summary));
+        self.ui.redraw(cx);
+    }
+
+    /// Plan — 「💾 保存到 works.json」. Builds a `Work` from
+    /// `current_*` state and upserts into `works.json`.
+    fn save_plan_to_works(&mut self, cx: &mut Cx) {
+        use octostudio_core::{PlanKind, Work};
+        if state().current_plan_items.is_empty() {
+            self.ui.label(cx, ids!(status_label))
+                .set_text(cx, "⚠ 无条目可保存");
+            return;
+        }
+        // Allocate next id and stamp time
+        let next_id;
+        let updated;
+        {
+            let mut s = state();
+            s.seq = s.seq.wrapping_add(1);
+            next_id = if s.current_id.is_empty() { format!("w-{}", s.seq) } else { s.current_id.clone() };
+            updated = s.seq;
+        }
+        let kind = state().plan_kind;
+        let work = Work {
+            id: next_id.clone(),
+            title: if state().current_title.is_empty() { "未命名作品".to_string() } else { state().current_title.clone() },
+            source: state().current_source.clone(),
+            reference: state().current_reference.clone(),
+            content: state().current_content.clone(),
+            style: state().current_style.clone(),
+            prompt: state().current_prompt.clone(),
+            plan_kind: Some(kind),
+            plan_title: state().current_plan_title.clone(),
+            plan_summary: state().current_plan_summary.clone(),
+            plan_items: state().current_plan_items.clone(),
+            plan_format: octostudio_core::ExportFormat::Markdown,
+            theme: state().current_theme.clone(),
+            composition: state().current_composition.clone(),
+            tags: vec![],
+            history: vec![],
+            updated,
+        };
+        {
+            let mut s = state();
+            if let Some(existing) = s.works.iter_mut().find(|w| w.id == next_id) {
+                *existing = work.clone();
+            } else {
+                s.works.push(work.clone());
+            }
+            s.current_id = next_id.clone();
+        }
+        let works = state().works.clone();
+        match octostudio_storage::works::save_works(&works) {
+            Ok(_) => {
+                let plan_kind_label = match kind {
+                    PlanKind::None => "原文二创",
+                    k => k.short(),
+                };
+                self.ui.label(cx, ids!(plan_summary_label))
+                    .set_text(cx, &format!("{} ({} 条,{})", next_id, work.plan_items.len(), plan_kind_label));
+                self.ui.label(cx, ids!(status_label))
+                    .set_text(cx, &format!("✓ 已保存 {} 到 works.json,共 {} 件", next_id, works.len()));
+            }
+            Err(e) => {
+                self.ui.label(cx, ids!(status_label))
+                    .set_text(cx, &format!("✗ 保存失败: {e}"));
+            }
+        }
+        self.refresh_plan_list(cx);
+    }
+
+    /// Plan — refresh the 8 body labels from `current_plan_items`.
+    /// Slots beyond `len()` show `(空)`.
+    fn refresh_plan_list(&mut self, cx: &mut Cx) {
+        use octostudio_core::item_fields;
+        let items = state().current_plan_items.clone();
+        let fields = item_fields(state().plan_kind);
+        // Compose one-line summary per item
+        let summaries: Vec<String> = items.iter().map(|it| {
+            let mut line = String::new();
+            for f in &fields {
+                let v = it.get(&f.key);
+                if v.is_empty() { continue; }
+                let s = if v.chars().count() > 18 {
+                    let mut s: String = v.chars().take(18).collect();
+                    s.push('…');
+                    s
+                } else {
+                    v.to_string()
+                };
+                line.push_str(&format!("{}:{} | ", f.label, s));
+            }
+            if line.is_empty() { "(空)".to_string() } else { line }
+        }).collect();
+        let body_ids = [
+            ids!(plan_item0_body), ids!(plan_item1_body), ids!(plan_item2_body),
+            ids!(plan_item3_body), ids!(plan_item4_body), ids!(plan_item5_body),
+            ids!(plan_item6_body), ids!(plan_item7_body),
+        ];
+        for (i, id) in body_ids.iter().enumerate() {
+            let text = summaries.get(i).cloned().unwrap_or_else(|| "(空)".to_string());
+            self.ui.label(cx, *id).set_text(cx, &text);
+        }
+        let summary = if items.is_empty() {
+            "(无计划)".to_string()
+        } else {
+            format!("{} · 共 {} 条", state().current_plan_title, items.len())
+        };
+        self.ui.label(cx, ids!(plan_summary_label)).set_text(cx, &summary);
+        self.ui.redraw(cx);
+    }
 }
 
 impl MatchEvent for App {
@@ -668,6 +1001,42 @@ impl MatchEvent for App {
         if self.ui.button(cx, ids!(plan_gen_image)).clicked(actions) {
             self.plan_generate_image_handler(cx);
             return;
+        }
+        if self.ui.button(cx, ids!(plan_item_add)).clicked(actions) {
+            self.item_add(cx);
+            return;
+        }
+        if self.ui.button(cx, ids!(plan_save_works)).clicked(actions) {
+            self.save_plan_to_works(cx);
+            return;
+        }
+        // Per-item 4 chips × 8 slots — 32 explicit button checks.
+        // (makepad's ids!() expands to &LiveId, not a struct that
+        // supports runtime indexing, so we spell out 32 explicit checks.)
+        for (i, ids_arr, acts) in [
+            (0u64, [ids!(plan_item0_edit), ids!(plan_item0_up), ids!(plan_item0_down), ids!(plan_item0_del)],
+                 [PlanItemAction::Edit, PlanItemAction::Up, PlanItemAction::Down, PlanItemAction::Del]),
+            (1u64, [ids!(plan_item1_edit), ids!(plan_item1_up), ids!(plan_item1_down), ids!(plan_item1_del)],
+                 [PlanItemAction::Edit, PlanItemAction::Up, PlanItemAction::Down, PlanItemAction::Del]),
+            (2u64, [ids!(plan_item2_edit), ids!(plan_item2_up), ids!(plan_item2_down), ids!(plan_item2_del)],
+                 [PlanItemAction::Edit, PlanItemAction::Up, PlanItemAction::Down, PlanItemAction::Del]),
+            (3u64, [ids!(plan_item3_edit), ids!(plan_item3_up), ids!(plan_item3_down), ids!(plan_item3_del)],
+                 [PlanItemAction::Edit, PlanItemAction::Up, PlanItemAction::Down, PlanItemAction::Del]),
+            (4u64, [ids!(plan_item4_edit), ids!(plan_item4_up), ids!(plan_item4_down), ids!(plan_item4_del)],
+                 [PlanItemAction::Edit, PlanItemAction::Up, PlanItemAction::Down, PlanItemAction::Del]),
+            (5u64, [ids!(plan_item5_edit), ids!(plan_item5_up), ids!(plan_item5_down), ids!(plan_item5_del)],
+                 [PlanItemAction::Edit, PlanItemAction::Up, PlanItemAction::Down, PlanItemAction::Del]),
+            (6u64, [ids!(plan_item6_edit), ids!(plan_item6_up), ids!(plan_item6_down), ids!(plan_item6_del)],
+                 [PlanItemAction::Edit, PlanItemAction::Up, PlanItemAction::Down, PlanItemAction::Del]),
+            (7u64, [ids!(plan_item7_edit), ids!(plan_item7_up), ids!(plan_item7_down), ids!(plan_item7_del)],
+                 [PlanItemAction::Edit, PlanItemAction::Up, PlanItemAction::Down, PlanItemAction::Del]),
+        ] {
+            for (j, id) in ids_arr.iter().enumerate() {
+                if self.ui.button(cx, *id).clicked(actions) {
+                    self.plan_item_action(cx, i, acts[j]);
+                    return;
+                }
+            }
         }
         // Home — sort chips
         if self.ui.button(cx, ids!(home_sort_desc)).clicked(actions) {
@@ -1213,3 +1582,8 @@ fn sort_mode_label(m: octostudio_core::SortMode) -> &'static str {
         ByKind => "按场景分组",
     }
 }
+
+// -------- C12: Plan view action enum + per-slot handler --------
+
+#[derive(Debug, Clone, Copy)]
+enum PlanItemAction { Edit, Up, Down, Del }

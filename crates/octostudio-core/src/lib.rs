@@ -12,11 +12,13 @@
 pub mod constants;
 pub mod enums;
 pub mod error;
+pub mod fields;
 pub mod work;
 
 pub use constants::{PRESETS, SCENARIOS, STYLES, THEMES, Preset, Scenario, Style, Theme};
 pub use enums::{ExportFormat, PlanKind, Screen, SortMode};
 pub use error::{OctostudioError, OctostudioResult};
+pub use fields::{blank_item, item_fields, ItemField};
 pub use work::{Composition, HistoryEntry, PlanItem, Work};
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
