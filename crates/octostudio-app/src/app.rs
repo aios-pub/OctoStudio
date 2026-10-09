@@ -366,11 +366,10 @@ script_mod! {
             draw_text.text_style.font_size: 14
         }
 
-        // Per-item card(7 items hard-coded for compile-time; for C12 we
-        // render text-only and let the editor show fields when toggled.
-        // Real PortalList with N items is C12.1.)
-        plan_list := View{
-            width: Fill height: Fit
+        // C12 — render 8 hard-coded item cards. C16 wraps them in a
+        // ScrollYView of fixed height 280 so 8 entries scroll when needed.
+        plan_list := ScrollYView{
+            width: Fill height: 280
             flow: Down spacing: 8
             plan_item0 := View{ width: Fill height: Fit flow: Down padding: Inset{top:8,bottom:8,left:14,right:14} spacing: 6
                 draw_bg.color: #xFFFFFF draw_bg.border_radius: 10.0
@@ -491,6 +490,44 @@ script_mod! {
                         draw_bg +: { color: #xB3541E border_radius: 12.0 } draw_text +: { color: #xFFFFFF } }
                 }
                 plan_item7_body := Label{ text: "(空)" draw_text.color: #x8E8E93 draw_text.text_style.font_size: 12 }
+            }
+        }
+
+        // C16: 6 字段 TextInput editor card (max 6 fields per plan_kind for video)
+        //     visible only when state().editing_k != -1
+        //     字段 labels 由 item_fields(plan_kind) 决定 (image=3, video=6, ppt=5, ...)
+        plan_editor_card := View{
+            width: Fill height: Fit
+            flow: Down spacing: 4
+            padding: Inset{top: 8, bottom: 8, left: 10, right: 10}
+            draw_bg.color: #xFFF5EC
+            draw_bg.border_radius: 8.0
+            draw_bg.border_size: 1.0
+            draw_bg.border_color: #xFF6B35
+
+            plan_editor_title := Label{ text: "✎ 编辑条目 (按 Tab 切换字段)"
+                draw_text.color: #x1C1C1E draw_text.text_style.font_size: 12 }
+            plan_field0 := TextInput{ width: Fill height: 28 empty_text: "field 0"
+                draw_bg +: { color: #xFFFFFF color_focus: #xF6F6F8 border_radius: 6.0 } }
+            plan_field1 := TextInput{ width: Fill height: 28 empty_text: "field 1"
+                draw_bg +: { color: #xFFFFFF color_focus: #xF6F6F8 border_radius: 6.0 } }
+            plan_field2 := TextInput{ width: Fill height: 28 empty_text: "field 2"
+                draw_bg +: { color: #xFFFFFF color_focus: #xF6F6F8 border_radius: 6.0 } }
+            plan_field3 := TextInput{ width: Fill height: 28 empty_text: "field 3"
+                draw_bg +: { color: #xFFFFFF color_focus: #xF6F6F8 border_radius: 6.0 } }
+            plan_field4 := TextInput{ width: Fill height: 28 empty_text: "field 4"
+                draw_bg +: { color: #xFFFFFF color_focus: #xF6F6F8 border_radius: 6.0 } }
+            plan_field5 := TextInput{ width: Fill height: 28 empty_text: "field 5"
+                draw_bg +: { color: #xFFFFFF color_focus: #xF6F6F8 border_radius: 6.0 } }
+            View{ width: Fill height: Fit flow: Right spacing: 6
+                plan_editor_save := ButtonFlat{ text: "💾 写入"
+                    height: 28 padding: Inset{left:12,right:12}
+                    draw_bg +: { color: #x2E7D5B border_radius: 14.0 }
+                    draw_text +: { color: #xFFFFFF } }
+                plan_editor_cancel := ButtonFlat{ text: "✗ 取消"
+                    height: 28 padding: Inset{left:12,right:12}
+                    draw_bg +: { color: #xF6F6F8 border_radius: 14.0 }
+                    draw_text +: { color: #x1C1C1E } }
             }
         }
 
@@ -941,23 +978,111 @@ impl App {
     /// next pass of `refresh_plan_list` can show the editor card. (C12
     /// simplification: no live TextInput; shows the values as text and
     /// logs the action; real TextInput card is C12.1.)
+    /// Plan — 「✎ 编辑」chip on item `idx`. C16: now really opens the
+    /// 1-6 field TextInput editor card. Populates the 6 TextInputs from
+    /// the current item, labels them per `item_fields(plan_kind)`, and
+    /// shows `plan_editor_card` (hides it when `editing_k == -1`).
     fn item_start_edit(&mut self, cx: &mut Cx, idx: u64) {
+        use octostudio_core::item_fields;
         state().editing_k = idx as i64;
-        let summary = match state().current_plan_items.get(idx as usize) {
-            Some(it) => {
-                use octostudio_core::item_fields;
-                let fields = item_fields(state().plan_kind);
-                let mut line = String::new();
-                for f in &fields {
-                    let v = it.get(&f.key);
-                    line.push_str(&format!("{}={} | ", f.label, v));
-                }
-                line
+        let n = state().current_plan_items.len();
+        if (idx as usize) >= n {
+            self.ui.label(cx, ids!(status_label))
+                .set_text(cx, "⚠ 越界");
+            state().editing_k = -1;
+            self.ui.view(cx, ids!(plan_editor_card)).set_visible(cx, false);
+            return;
+        }
+        let fields = item_fields(state().plan_kind);
+        // Populate the 6 TextInputs (fieldN gets the value of the Nth
+        // field, empty string for missing fields beyond the schema).
+        let item_keys: Vec<String> = (0..6).map(|i| {
+            fields.get(i).map(|f| f.key.clone()).unwrap_or_default()
+        }).collect();
+        let field_ids = [
+            ids!(plan_field0), ids!(plan_field1), ids!(plan_field2),
+            ids!(plan_field3), ids!(plan_field4), ids!(plan_field5),
+        ];
+        let labels: Vec<String> = (0..6).map(|i| {
+            fields.get(i).map(|f| f.label.clone()).unwrap_or_default()
+        }).collect();
+        // Build the editor title showing field labels
+        let title_labels: Vec<String> = (0..6).filter_map(|i| {
+            if labels[i].is_empty() { None }
+            else { Some(format!("[{}]{}", i, labels[i])) }
+        }).collect();
+        let mut title = format!("✎ 编辑第 {} 条 · 字段:", idx + 1);
+        if !title_labels.is_empty() {
+            title.push_str(&title_labels.join(" "));
+        }
+        self.ui.label(cx, ids!(plan_editor_title)).set_text(cx, &title);
+
+        if let Some(it) = state().current_plan_items.get(idx as usize) {
+            for i in 0..6 {
+                let v: String = if item_keys[i].is_empty() {
+                    String::new()
+                } else {
+                    it.get(&item_keys[i]).to_string()
+                };
+                self.ui.text_input(cx, field_ids[i])
+                    .set_text(cx, &v);
             }
-            None => "(无)".to_string(),
-        };
+        }
+        // Show the editor card
+        self.ui.view(cx, ids!(plan_editor_card)).set_visible(cx, true);
         self.ui.label(cx, ids!(status_label))
-            .set_text(cx, &format!("✎ 进入编辑第 {} 条: {}", idx + 1, summary));
+            .set_text(cx, &format!("✎ 编辑第 {} 条(写入 / 取消 见下方 card)", idx + 1));
+        self.ui.redraw(cx);
+    }
+
+    /// Plan — 「💾 写入」 in editor card. Reads 6 TextInput fields,
+    /// writes back to `state().current_plan_items[editing_k].fields`,
+    /// then closes the editor (editing_k = -1).
+    fn plan_editor_save(&mut self, cx: &mut Cx) {
+        use octostudio_core::item_fields;
+        let idx = state().editing_k;
+        if idx < 0 {
+            self.ui.label(cx, ids!(status_label))
+                .set_text(cx, "⚠ 没在编辑状态");
+            return;
+        }
+        let fields = item_fields(state().plan_kind);
+        let field_ids = [
+            ids!(plan_field0), ids!(plan_field1), ids!(plan_field2),
+            ids!(plan_field3), ids!(plan_field4), ids!(plan_field5),
+        ];
+        let item_keys: Vec<String> = (0..6).map(|i| {
+            fields.get(i).map(|f| f.key.clone()).unwrap_or_default()
+        }).collect();
+        let new_values: Vec<String> = (0..6).map(|i| {
+            if item_keys[i].is_empty() { return String::new(); }
+            self.ui.text_input(cx, field_ids[i]).text()
+        }).collect();
+        let n_written = {
+            let mut s = state();
+            if let Some(item) = s.current_plan_items.get_mut(idx as usize) {
+                for (i, key) in item_keys.iter().enumerate() {
+                    if key.is_empty() { continue; }
+                    item.fields.insert(key.clone(), new_values[i].clone());
+                }
+                item.fields.len()
+            } else {
+                0
+            }
+        };
+        state().editing_k = -1;
+        self.ui.view(cx, ids!(plan_editor_card)).set_visible(cx, false);
+        self.ui.label(cx, ids!(status_label))
+            .set_text(cx, &format!("✓ 第 {} 条已写入({} 字段)", idx + 1, n_written));
+        self.refresh_plan_list(cx);
+    }
+
+    /// Plan — 「✗ 取消」 in editor card. Closes the editor.
+    fn plan_editor_cancel(&mut self, cx: &mut Cx) {
+        state().editing_k = -1;
+        self.ui.view(cx, ids!(plan_editor_card)).set_visible(cx, false);
+        self.ui.label(cx, ids!(status_label))
+            .set_text(cx, "✗ 取消编辑");
         self.ui.redraw(cx);
     }
 
@@ -1599,6 +1724,14 @@ impl MatchEvent for App {
         }
         if self.ui.button(cx, ids!(plan_to_export)).clicked(actions) {
             self.goto(cx, Screen::Export);
+            return;
+        }
+        if self.ui.button(cx, ids!(plan_editor_save)).clicked(actions) {
+            self.plan_editor_save(cx);
+            return;
+        }
+        if self.ui.button(cx, ids!(plan_editor_cancel)).clicked(actions) {
+            self.plan_editor_cancel(cx);
             return;
         }
         // Studio — 7 AI panel chips
