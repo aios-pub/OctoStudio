@@ -63,7 +63,7 @@ crates/
 ├── octostudio-export    # 8 format renderers: Markdown/公众号/Notion/SRT/制作包/Marp/markmap/提纲
 ├── octostudio-render    # AppState: 35+ field,屏幕渲染函数
 ├── octostudio-demo      # 2 个首启动 demo works
-└── octostudio-app       # binary: main, app.rs 的 script_mod! 块含 5 屏 + TabBar
+└── octostudio-app       # binary: main, app.rs 的 script_mod! 块含 5 屏 + 飞书风侧边导航
 ```
 
 `makepad-widgets` 解析到 `../makepad/widgets`(同机相邻目录,path dep)。

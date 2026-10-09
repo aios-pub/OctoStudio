@@ -19,7 +19,7 @@ types via `octostudio-core` / `octostudio-theme`:
 ```
 .                                # repo root = workspace root (Cargo.toml here)
 └── crates/
-    ├── octostudio-app      # binary — main entry, App glue, 5-screen shell, TabBar
+    ├── octostudio-app      # binary — main entry, App glue, 5-screen shell, Feishu-style sidebar
     ├── octostudio-core     # types — Work, PlanItem, Composition, Screen, PlanKind,
     │                        # ExportFormat, SortMode, SCENARIOS/THEMES/PRESETS/STYLES
     ├── octostudio-theme    # tokens — 16 colors + 7-step type scale (light + dark reservations)

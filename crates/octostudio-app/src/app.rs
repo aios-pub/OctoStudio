@@ -35,20 +35,33 @@ script_mod! {
     let HomeView = View{
         width: Fill height: Fill
         flow: Down
-        padding: Inset{top: 16, bottom: 16, left: 24, right: 24}
-        spacing: 8
-        draw_bg.color: #xF6F6F8
+        draw_bg.color: #xFFFFFF
 
-        home_title := Label{
-            text: "广场"
-            draw_text.color: #x1C1C1E
-            draw_text.text_style.font_size: 22
+        // 屏头(sticky)— 白底标题区
+        View{
+            width: Fill height: Fit
+            flow: Down
+            spacing: 2
+            padding: Inset{top: 20, bottom: 10, left: 28, right: 28}
+            home_title := Label{
+                text: "广场"
+                draw_text.color: #x1F2329
+                draw_text.text_style.font_size: 20
+            }
+            home_subtitle := Label{
+                text: "本地作品库 · 搜索 · 排序 · 批量管理"
+                draw_text.color: #x8F959E
+                draw_text.text_style.font_size: 12
+            }
         }
-        home_subtitle := Label{
-            text: "C11 — 搜索 + 3 种排序 + 多选 + 真实 works 列表"
-            draw_text.color: #x8E8E93
-            draw_text.text_style.font_size: 12
-        }
+
+        // 内容区 — 灰底 + 白卡,可滚动
+        ScrollYView{
+            width: Fill height: Fill
+            flow: Down
+            spacing: 10
+            padding: Inset{top: 6, bottom: 20, left: 28, right: 28}
+            draw_bg +: { color: #xF2F3F5 }
 
         // 搜索行
         View{
@@ -57,24 +70,24 @@ script_mod! {
             home_search := TextInput{
                 width: Fill height: 32
                 empty_text: "搜索标题 / 原文关键词..."
-                draw_bg +: { color: #xFFFFFF color_focus: #xF6F6F8 border_radius: 8.0 }
+                draw_bg +: { color: #xFFFFFF color_focus: #xF2F3F5 border_radius: 8.0 }
             }
             home_search_clear := ButtonFlat{
                 text: "清除"
                 height: 32 padding: Inset{left: 12, right: 12}
-                draw_bg +: { color: #xF6F6F8 border_radius: 16.0 }
-                draw_text +: { color: #x1C1C1E }
+                draw_bg +: { color: #xF2F3F5 border_radius: 16.0 }
+                draw_text +: { color: #x1F2329 }
             }
             home_select_toggle := ButtonFlat{
                 text: "多选"
                 height: 32 padding: Inset{left: 12, right: 12}
-                draw_bg +: { color: #xF6F6F8 border_radius: 16.0 }
-                draw_text +: { color: #x1C1C1E }
+                draw_bg +: { color: #xF2F3F5 border_radius: 16.0 }
+                draw_text +: { color: #x1F2329 }
             }
             home_delete_selected := ButtonFlat{
                 text: "删除所选"
                 height: 32 padding: Inset{left: 12, right: 12}
-                draw_bg +: { color: #xB3541E color_hover: #xD66030 border_radius: 16.0 }
+                draw_bg +: { color: #xF54A45 color_hover: #xFF6157 border_radius: 16.0 }
                 draw_text +: { color: #xFFFFFF }
             }
         }
@@ -84,11 +97,11 @@ script_mod! {
             width: Fill height: Fit
             flow: Right spacing: 4
             home_sort_desc := ButtonFlat{ text: "⇅ 最新" height: 26 padding: Inset{left: 10, right: 10}
-                draw_bg +: { color: #xFF6B35 border_radius: 13.0 } draw_text +: { color: #xFFFFFF } }
+                draw_bg +: { color: #x3370FF border_radius: 13.0 } draw_text +: { color: #xFFFFFF } }
             home_sort_asc := ButtonFlat{ text: "⇅ 最早" height: 26 padding: Inset{left: 10, right: 10}
-                draw_bg +: { color: #xF6F6F8 border_radius: 13.0 } draw_text +: { color: #x1C1C1E } }
+                draw_bg +: { color: #xF2F3F5 border_radius: 13.0 } draw_text +: { color: #x1F2329 } }
             home_sort_kind := ButtonFlat{ text: "⇅ 按场景" height: 26 padding: Inset{left: 10, right: 10}
-                draw_bg +: { color: #xF6F6F8 border_radius: 13.0 } draw_text +: { color: #x1C1C1E } }
+                draw_bg +: { color: #xF2F3F5 border_radius: 13.0 } draw_text +: { color: #x1F2329 } }
         }
 
         // 多选条(只在 select_mode 显示)
@@ -98,18 +111,18 @@ script_mod! {
             visible: false
             home_select_label := Label{
                 text: "已选 0 项"
-                draw_text.color: #xFF6B35
+                draw_text.color: #x3370FF
                 draw_text.text_style.font_size: 12
             }
         }
 
         // works 列表
         home_works_list := View{
-            width: Fill height: Fill
+            width: Fill height: Fit
             flow: Down spacing: 6
             home_works_empty := Label{
                 text: "(无作品)"
-                draw_text.color: #x8E8E93
+                draw_text.color: #x646A73
                 draw_text.text_style.font_size: 12
             }
         }
@@ -121,41 +134,53 @@ script_mod! {
             home_test_image := ButtonFlat{
                 text: "🎨 测试 AI 配图(首作品)"
                 height: 36 padding: Inset{left: 14, right: 14}
-                draw_bg +: { color: #xFF6B35 color_hover: #xFF8866 border_radius: 18.0 }
+                draw_bg +: { color: #x3370FF color_hover: #x5B8CFF border_radius: 18.0 }
                 draw_text +: { color: #xFFFFFF }
             }
             home_test_video := ButtonFlat{
                 text: "🎬 测试 AI 视频(首作品)"
                 height: 36 padding: Inset{left: 14, right: 14}
-                draw_bg +: { color: #x4A6FA5 color_hover: #x6A8FC5 border_radius: 18.0 }
+                draw_bg +: { color: #x245BDB color_hover: #x4A79F0 border_radius: 18.0 }
                 draw_text +: { color: #xFFFFFF }
             }
             home_test_export := ButtonFlat{
                 text: "📄 测试导出"
                 height: 36 padding: Inset{left: 14, right: 14}
-                draw_bg +: { color: #x2E7D5B color_hover: #x4E9D7B border_radius: 18.0 }
+                draw_bg +: { color: #x34C724 color_hover: #x54D644 border_radius: 18.0 }
                 draw_text +: { color: #xFFFFFF }
             }
+        }
         }
     }
 
     let ComposeView = View{
         width: Fill height: Fill
         flow: Down
-        padding: Inset{top: 16, bottom: 16, left: 24, right: 24}
-        spacing: 12
-        draw_bg.color: #xF6F6F8
+        draw_bg.color: #xFFFFFF
 
-        compose_title := Label{
-            text: "开始一段创作"
-            draw_text.color: #x1C1C1E
-            draw_text.text_style.font_size: 22
+        View{
+            width: Fill height: Fit
+            flow: Down
+            spacing: 2
+            padding: Inset{top: 20, bottom: 10, left: 28, right: 28}
+            compose_title := Label{
+                text: "开始一段创作"
+                draw_text.color: #x1F2329
+                draw_text.text_style.font_size: 20
+            }
+            compose_subtitle := Label{
+                text: "一句话意图 → 结构化创作(AI 或演示数据)"
+                draw_text.color: #x8F959E
+                draw_text.text_style.font_size: 12
+            }
         }
-        compose_subtitle := Label{
-            text: "C11 — 3 输入卡 + 「生成」调 TextClient::ask_scenario"
-            draw_text.color: #x8E8E93
-            draw_text.text_style.font_size: 12
-        }
+
+        ScrollYView{
+            width: Fill height: Fill
+            flow: Down
+            spacing: 12
+            padding: Inset{top: 6, bottom: 20, left: 28, right: 28}
+            draw_bg +: { color: #xF2F3F5 }
 
         // 场景 chip 行(简易版)
         View{
@@ -164,22 +189,22 @@ script_mod! {
 
             Label{
                 text: "场景"
-                draw_text.color: #x1C1C1E
+                draw_text.color: #x1F2329
                 draw_text.text_style.font_size: 12
             }
             compose_scenarios := View{
                 width: Fill height: Fit
                 flow: Right spacing: 4
                 compose_s1 := ButtonFlat{ text: "📝 原文二创" height: 28 padding: Inset{left: 10, right: 10}
-                    draw_bg +: { color: #xFF6B35 border_radius: 14.0 } draw_text +: { color: #xFFFFFF } }
+                    draw_bg +: { color: #x3370FF border_radius: 14.0 } draw_text +: { color: #xFFFFFF } }
                 compose_s2 := ButtonFlat{ text: "🎬 视频分镜" height: 28 padding: Inset{left: 10, right: 10}
-                    draw_bg +: { color: #xF6F6F8 border_radius: 14.0 } draw_text +: { color: #x1C1C1E } }
+                    draw_bg +: { color: #xF2F3F5 border_radius: 14.0 } draw_text +: { color: #x1F2329 } }
                 compose_s3 := ButtonFlat{ text: "📷 图文" height: 28 padding: Inset{left: 10, right: 10}
-                    draw_bg +: { color: #xF6F6F8 border_radius: 14.0 } draw_text +: { color: #x1C1C1E } }
+                    draw_bg +: { color: #xF2F3F5 border_radius: 14.0 } draw_text +: { color: #x1F2329 } }
                 compose_s4 := ButtonFlat{ text: "🏷️ 标题" height: 28 padding: Inset{left: 10, right: 10}
-                    draw_bg +: { color: #xF6F6F8 border_radius: 14.0 } draw_text +: { color: #x1C1C1E } }
+                    draw_bg +: { color: #xF2F3F5 border_radius: 14.0 } draw_text +: { color: #x1F2329 } }
                 compose_s5 := ButtonFlat{ text: "✨ 金句" height: 28 padding: Inset{left: 10, right: 10}
-                    draw_bg +: { color: #xF6F6F8 border_radius: 14.0 } draw_text +: { color: #x1C1C1E } }
+                    draw_bg +: { color: #xF2F3F5 border_radius: 14.0 } draw_text +: { color: #x1F2329 } }
             }
         }
 
@@ -188,22 +213,22 @@ script_mod! {
             width: Fill height: Fit
             flow: Right spacing: 4
             compose_theme1 := ButtonFlat{ text: "☀ 浅色" height: 26 padding: Inset{left: 10, right: 10}
-                draw_bg +: { color: #xF6F6F8 border_radius: 13.0 } draw_text +: { color: #x1C1C1E } }
+                draw_bg +: { color: #xF2F3F5 border_radius: 13.0 } draw_text +: { color: #x1F2329 } }
             compose_theme2 := ButtonFlat{ text: "🌙 情感" height: 26 padding: Inset{left: 10, right: 10}
-                draw_bg +: { color: #xF6F6F8 border_radius: 13.0 } draw_text +: { color: #x1C1C1E } }
+                draw_bg +: { color: #xF2F3F5 border_radius: 13.0 } draw_text +: { color: #x1F2329 } }
             compose_theme3 := ButtonFlat{ text: "🔬 科普" height: 26 padding: Inset{left: 10, right: 10}
-                draw_bg +: { color: #xF6F6F8 border_radius: 13.0 } draw_text +: { color: #x1C1C1E } }
+                draw_bg +: { color: #xF2F3F5 border_radius: 13.0 } draw_text +: { color: #x1F2329 } }
         }
 
         // 一句话意图
         View{
             width: Fill height: Fit
             flow: Down spacing: 4
-            Label{ text: "一句话意图" draw_text.color: #x8E8E93 draw_text.text_style.font_size: 11 }
+            Label{ text: "一句话意图" draw_text.color: #x646A73 draw_text.text_style.font_size: 11 }
             compose_prompt := TextInput{
                 width: Fill height: 36
                 empty_text: "如:夏日海边慢生活,温暖散文风"
-                draw_bg +: { color: #xFFFFFF color_focus: #xF6F6F8 border_radius: 8.0 }
+                draw_bg +: { color: #xFFFFFF color_focus: #xF2F3F5 border_radius: 8.0 }
             }
         }
 
@@ -211,11 +236,11 @@ script_mod! {
         View{
             width: Fill height: Fit
             flow: Down spacing: 4
-            Label{ text: "文字稿 / 原文" draw_text.color: #x8E8E93 draw_text.text_style.font_size: 11 }
+            Label{ text: "文字稿 / 原文" draw_text.color: #x646A73 draw_text.text_style.font_size: 11 }
             compose_source := TextInput{
                 width: Fill height: 120
                 empty_text: "粘贴视频文字稿 / 原文 / 详细描述..."
-                draw_bg +: { color: #xFFFFFF color_focus: #xF6F6F8 border_radius: 8.0 }
+                draw_bg +: { color: #xFFFFFF color_focus: #xF2F3F5 border_radius: 8.0 }
             }
         }
 
@@ -226,86 +251,98 @@ script_mod! {
             compose_generate := ButtonFlat{
                 text: "✨ 生成(AI 或 demo)"
                 height: 40 padding: Inset{left: 18, right: 18}
-                draw_bg +: { color: #xFF6B35 color_hover: #xFF8866 border_radius: 20.0 }
+                draw_bg +: { color: #x3370FF color_hover: #x5B8CFF border_radius: 20.0 }
                 draw_text +: { color: #xFFFFFF }
             }
+        }
         }
     }
 
     let StudioView = View{
         width: Fill height: Fill
         flow: Down
-        padding: Inset{top: 16, bottom: 16, left: 24, right: 24}
-        spacing: 8
-        draw_bg.color: #xF6F6F8
+        draw_bg.color: #xFFFFFF
 
-        studio_title := Label{
-            text: "工坊"
-            draw_text.color: #x1C1C1E
-            draw_text.text_style.font_size: 22
+        View{
+            width: Fill height: Fit
+            flow: Down
+            spacing: 2
+            padding: Inset{top: 20, bottom: 10, left: 28, right: 28}
+            studio_title := Label{
+                text: "工坊"
+                draw_text.color: #x1F2329
+                draw_text.text_style.font_size: 20
+            }
+            studio_subtitle := Label{
+                text: "8 种风格二创 · 7 项 AI 助手 · 撤销 / 快照"
+                draw_text.color: #x8F959E
+                draw_text.text_style.font_size: 12
+            }
         }
-        studio_subtitle := Label{
-            text: "C13 — 8 style chip + AI 创作/重试/撤销/快照 + 7 AI panel chip 接 TextClient"
-            draw_text.color: #x8E8E93
-            draw_text.text_style.font_size: 12
-        }
+
+        ScrollYView{
+            width: Fill height: Fill
+            flow: Down
+            spacing: 10
+            padding: Inset{top: 6, bottom: 20, left: 28, right: 28}
+            draw_bg +: { color: #xF2F3F5 }
 
         // 8 style chip 横排
         View{
             width: Fill height: Fit
             flow: Right spacing: 4
             studio_s1 := ButtonFlat{ text: "改写" height: 28 padding: Inset{left:10,right:10}
-                draw_bg +: { color: #xFF6B35 border_radius: 14.0 } draw_text +: { color: #xFFFFFF } }
+                draw_bg +: { color: #x3370FF border_radius: 14.0 } draw_text +: { color: #xFFFFFF } }
             studio_s2 := ButtonFlat{ text: "翻译" height: 28 padding: Inset{left:10,right:10}
-                draw_bg +: { color: #xF6F6F8 border_radius: 14.0 } draw_text +: { color: #x1C1C1E } }
+                draw_bg +: { color: #xF2F3F5 border_radius: 14.0 } draw_text +: { color: #x1F2329 } }
             studio_s3 := ButtonFlat{ text: "总结" height: 28 padding: Inset{left:10,right:10}
-                draw_bg +: { color: #xF6F6F8 border_radius: 14.0 } draw_text +: { color: #x1C1C1E } }
+                draw_bg +: { color: #xF2F3F5 border_radius: 14.0 } draw_text +: { color: #x1F2329 } }
             studio_s4 := ButtonFlat{ text: "评论" height: 28 padding: Inset{left:10,right:10}
-                draw_bg +: { color: #xF6F6F8 border_radius: 14.0 } draw_text +: { color: #x1C1C1E } }
+                draw_bg +: { color: #xF2F3F5 border_radius: 14.0 } draw_text +: { color: #x1F2329 } }
             studio_s5 := ButtonFlat{ text: "润色" height: 28 padding: Inset{left:10,right:10}
-                draw_bg +: { color: #xF6F6F8 border_radius: 14.0 } draw_text +: { color: #x1C1C1E } }
+                draw_bg +: { color: #xF2F3F5 border_radius: 14.0 } draw_text +: { color: #x1F2329 } }
             studio_s6 := ButtonFlat{ text: "续写" height: 28 padding: Inset{left:10,right:10}
-                draw_bg +: { color: #xF6F6F8 border_radius: 14.0 } draw_text +: { color: #x1C1C1E } }
+                draw_bg +: { color: #xF2F3F5 border_radius: 14.0 } draw_text +: { color: #x1F2329 } }
             studio_s7 := ButtonFlat{ text: "扩写" height: 28 padding: Inset{left:10,right:10}
-                draw_bg +: { color: #xF6F6F8 border_radius: 14.0 } draw_text +: { color: #x1C1C1E } }
+                draw_bg +: { color: #xF2F3F5 border_radius: 14.0 } draw_text +: { color: #x1F2329 } }
             studio_s8 := ButtonFlat{ text: "小红书体" height: 28 padding: Inset{left:10,right:10}
-                draw_bg +: { color: #xF6F6F8 border_radius: 14.0 } draw_text +: { color: #x1C1C1E } }
+                draw_bg +: { color: #xF2F3F5 border_radius: 14.0 } draw_text +: { color: #x1F2329 } }
         }
 
         // AI 创作/重试/撤销/快照 + 标题输入
         View{
             width: Fill height: Fit
             flow: Down spacing: 4
-            Label{ text: "标题" draw_text.color: #x8E8E93 draw_text.text_style.font_size: 11 }
+            Label{ text: "标题" draw_text.color: #x646A73 draw_text.text_style.font_size: 11 }
             studio_title_input := TextInput{
                 width: Fill height: 36
                 empty_text: "作品标题..."
-                draw_bg +: { color: #xFFFFFF color_focus: #xF6F6F8 border_radius: 8.0 }
+                draw_bg +: { color: #xFFFFFF color_focus: #xF2F3F5 border_radius: 8.0 }
             }
             View{ width: Fill height: Fit flow: Right spacing: 6
                 studio_ai_write := ButtonFlat{ text: "✨ AI 创作(按当前 style 改写)"
                     height: 36 padding: Inset{left:14,right:14}
-                    draw_bg +: { color: #xFF6B35 color_hover: #xFF8866 border_radius: 18.0 }
+                    draw_bg +: { color: #x3370FF color_hover: #x5B8CFF border_radius: 18.0 }
                     draw_text +: { color: #xFFFFFF } }
                 studio_ai_retry := ButtonFlat{ text: "🔄 重试"
                     height: 36 padding: Inset{left:14,right:14}
-                    draw_bg +: { color: #xF6F6F8 border_radius: 18.0 }
-                    draw_text +: { color: #x1C1C1E } }
+                    draw_bg +: { color: #xF2F3F5 border_radius: 18.0 }
+                    draw_text +: { color: #x1F2329 } }
                 studio_undo := ButtonFlat{ text: "↶ 撤销(0)"
                     height: 36 padding: Inset{left:14,right:14}
-                    draw_bg +: { color: #xF6F6F8 border_radius: 18.0 }
-                    draw_text +: { color: #x1C1C1E } }
+                    draw_bg +: { color: #xF2F3F5 border_radius: 18.0 }
+                    draw_text +: { color: #x1F2329 } }
                 studio_snapshot := ButtonFlat{ text: "📷 快照原文"
                     height: 36 padding: Inset{left:14,right:14}
-                    draw_bg +: { color: #xF6F6F8 border_radius: 18.0 }
-                    draw_text +: { color: #x1C1C1E } }
+                    draw_bg +: { color: #xF2F3F5 border_radius: 18.0 }
+                    draw_text +: { color: #x1F2329 } }
             }
         }
 
         // 原文输入(从 current_source 同步)
-        Label{ text: "原文 / 内容" draw_text.color: #x8E8E93 draw_text.text_style.font_size: 11 }
+        Label{ text: "原文 / 内容" draw_text.color: #x646A73 draw_text.text_style.font_size: 11 }
         studio_source_label := Label{ text: "(空 — 在「录入」填)"
-            draw_text.color: #x1C1C1E draw_text.text_style.font_size: 12 }
+            draw_text.color: #x1F2329 draw_text.text_style.font_size: 12 }
 
         // AI 助手 panel: 7 chips + result label
         View{
@@ -315,56 +352,68 @@ script_mod! {
             draw_bg.color: #xFFFFFF
             draw_bg.border_radius: 10.0
             draw_bg.border_size: 1.0
-            draw_bg.border_color: #xE5E5EA
+            draw_bg.border_color: #xDEE0E3
 
             Label{ text: "🤖 AI 助手(7 项) — Agnes 3.0 Flash"
-                draw_text.color: #x1C1C1E draw_text.text_style.font_size: 13 }
+                draw_text.color: #x1F2329 draw_text.text_style.font_size: 13 }
             View{ width: Fill height: Fit flow: Right spacing: 4
                 studio_p1 := ButtonFlat{ text: "起标题" height: 24 padding: Inset{left:8,right:8}
-                    draw_bg +: { color: #xFFE9D6 border_radius: 12.0 } draw_text +: { color: #xB3541E } }
+                    draw_bg +: { color: #xE1EFFF border_radius: 12.0 } draw_text +: { color: #x3370FF } }
                 studio_p2 := ButtonFlat{ text: "关键词" height: 24 padding: Inset{left:8,right:8}
-                    draw_bg +: { color: #xFFE9D6 border_radius: 12.0 } draw_text +: { color: #xB3541E } }
+                    draw_bg +: { color: #xE1EFFF border_radius: 12.0 } draw_text +: { color: #x3370FF } }
                 studio_p3 := ButtonFlat{ text: "摘要" height: 24 padding: Inset{left:8,right:8}
-                    draw_bg +: { color: #xFFE9D6 border_radius: 12.0 } draw_text +: { color: #xB3541E } }
+                    draw_bg +: { color: #xE1EFFF border_radius: 12.0 } draw_text +: { color: #x3370FF } }
                 studio_p4 := ButtonFlat{ text: "风格迁移" height: 24 padding: Inset{left:8,right:8}
-                    draw_bg +: { color: #xFFE9D6 border_radius: 12.0 } draw_text +: { color: #xB3541E } }
+                    draw_bg +: { color: #xE1EFFF border_radius: 12.0 } draw_text +: { color: #x3370FF } }
                 studio_p5 := ButtonFlat{ text: "中英对照" height: 24 padding: Inset{left:8,right:8}
-                    draw_bg +: { color: #xFFE9D6 border_radius: 12.0 } draw_text +: { color: #xB3541E } }
+                    draw_bg +: { color: #xE1EFFF border_radius: 12.0 } draw_text +: { color: #x3370FF } }
                 studio_p6 := ButtonFlat{ text: "标题打分" height: 24 padding: Inset{left:8,right:8}
-                    draw_bg +: { color: #xFFE9D6 border_radius: 12.0 } draw_text +: { color: #xB3541E } }
+                    draw_bg +: { color: #xE1EFFF border_radius: 12.0 } draw_text +: { color: #x3370FF } }
                 studio_p7 := ButtonFlat{ text: "模型预算" height: 24 padding: Inset{left:8,right:8}
-                    draw_bg +: { color: #xE5E5EA border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                    draw_bg +: { color: #xDEE0E3 border_radius: 12.0 } draw_text +: { color: #x1F2329 } }
             }
             studio_result_label := Label{
                 text: "(点任意 AI 助手 chip,结果会显示在这里)"
-                draw_text.color: #x8E8E93
+                draw_text.color: #x646A73
                 draw_text.text_style.font_size: 12
             }
+        }
         }
     }
 
     let PlanView = View{
         width: Fill height: Fill
         flow: Down
-        padding: Inset{top: 16, bottom: 16, left: 24, right: 24}
-        spacing: 10
-        draw_bg.color: #xF6F6F8
+        draw_bg.color: #xFFFFFF
 
-        plan_title := Label{
-            text: "计划"
-            draw_text.color: #x1C1C1E
-            draw_text.text_style.font_size: 22
+        View{
+            width: Fill height: Fit
+            flow: Down
+            spacing: 2
+            padding: Inset{top: 20, bottom: 10, left: 28, right: 28}
+            plan_title := Label{
+                text: "计划"
+                draw_text.color: #x1F2329
+                draw_text.text_style.font_size: 20
+            }
+            plan_subtitle := Label{
+                text: "逐条编辑 · AI 配图 · AI 合成视频"
+                draw_text.color: #x8F959E
+                draw_text.text_style.font_size: 12
+            }
+            plan_summary_label := Label{
+                text: "(无计划)"
+                draw_text.color: #x1F2329
+                draw_text.text_style.font_size: 14
+            }
         }
-        plan_subtitle := Label{
-            text: "C12 — 每条 6 字段 inline editor + 增/删/上/下 + works.json 持久化"
-            draw_text.color: #x8E8E93
-            draw_text.text_style.font_size: 12
-        }
-        plan_summary_label := Label{
-            text: "(无计划)"
-            draw_text.color: #x1C1C1E
-            draw_text.text_style.font_size: 14
-        }
+
+        ScrollYView{
+            width: Fill height: Fill
+            flow: Down
+            spacing: 10
+            padding: Inset{top: 6, bottom: 20, left: 28, right: 28}
+            draw_bg +: { color: #xF2F3F5 }
 
         // C12 — render 8 hard-coded item cards. C16 wraps them in a
         // ScrollYView of fixed height 280 so 8 entries scroll when needed.
@@ -374,122 +423,122 @@ script_mod! {
             plan_item0 := View{ width: Fill height: Fit flow: Down padding: Inset{top:8,bottom:8,left:14,right:14} spacing: 6
                 draw_bg.color: #xFFFFFF draw_bg.border_radius: 10.0
                 plan_item0_header := View{ width: Fill height: Fit flow: Right spacing: 6
-                    plan_item0_idx := Label{ text: "第 1 条" draw_text.color: #x1C1C1E draw_text.text_style.font_size: 13 }
+                    plan_item0_idx := Label{ text: "第 1 条" draw_text.color: #x1F2329 draw_text.text_style.font_size: 13 }
                     plan_item0_edit := ButtonFlat{ text: "✎ 编辑" height: 24 padding: Inset{left:8,right:8}
-                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                        draw_bg +: { color: #xF2F3F5 border_radius: 12.0 } draw_text +: { color: #x1F2329 } }
                     plan_item0_up := ButtonFlat{ text: "↑ 上移" height: 24 padding: Inset{left:8,right:8}
-                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                        draw_bg +: { color: #xF2F3F5 border_radius: 12.0 } draw_text +: { color: #x1F2329 } }
                     plan_item0_down := ButtonFlat{ text: "↓ 下移" height: 24 padding: Inset{left:8,right:8}
-                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                        draw_bg +: { color: #xF2F3F5 border_radius: 12.0 } draw_text +: { color: #x1F2329 } }
                     plan_item0_del := ButtonFlat{ text: "🗑 删除" height: 24 padding: Inset{left:8,right:8}
-                        draw_bg +: { color: #xB3541E border_radius: 12.0 } draw_text +: { color: #xFFFFFF } }
+                        draw_bg +: { color: #xF54A45 border_radius: 12.0 } draw_text +: { color: #xFFFFFF } }
                 }
-                plan_item0_body := Label{ text: "(空)" draw_text.color: #x8E8E93 draw_text.text_style.font_size: 12 }
+                plan_item0_body := Label{ text: "(空)" draw_text.color: #x646A73 draw_text.text_style.font_size: 12 }
             }
             plan_item1 := View{ width: Fill height: Fit flow: Down padding: Inset{top:8,bottom:8,left:14,right:14} spacing: 6
                 draw_bg.color: #xFFFFFF draw_bg.border_radius: 10.0
                 plan_item1_header := View{ width: Fill height: Fit flow: Right spacing: 6
-                    plan_item1_idx := Label{ text: "第 2 条" draw_text.color: #x1C1C1E draw_text.text_style.font_size: 13 }
+                    plan_item1_idx := Label{ text: "第 2 条" draw_text.color: #x1F2329 draw_text.text_style.font_size: 13 }
                     plan_item1_edit := ButtonFlat{ text: "✎ 编辑" height: 24 padding: Inset{left:8,right:8}
-                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                        draw_bg +: { color: #xF2F3F5 border_radius: 12.0 } draw_text +: { color: #x1F2329 } }
                     plan_item1_up := ButtonFlat{ text: "↑ 上移" height: 24 padding: Inset{left:8,right:8}
-                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                        draw_bg +: { color: #xF2F3F5 border_radius: 12.0 } draw_text +: { color: #x1F2329 } }
                     plan_item1_down := ButtonFlat{ text: "↓ 下移" height: 24 padding: Inset{left:8,right:8}
-                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                        draw_bg +: { color: #xF2F3F5 border_radius: 12.0 } draw_text +: { color: #x1F2329 } }
                     plan_item1_del := ButtonFlat{ text: "🗑 删除" height: 24 padding: Inset{left:8,right:8}
-                        draw_bg +: { color: #xB3541E border_radius: 12.0 } draw_text +: { color: #xFFFFFF } }
+                        draw_bg +: { color: #xF54A45 border_radius: 12.0 } draw_text +: { color: #xFFFFFF } }
                 }
-                plan_item1_body := Label{ text: "(空)" draw_text.color: #x8E8E93 draw_text.text_style.font_size: 12 }
+                plan_item1_body := Label{ text: "(空)" draw_text.color: #x646A73 draw_text.text_style.font_size: 12 }
             }
             plan_item2 := View{ width: Fill height: Fit flow: Down padding: Inset{top:8,bottom:8,left:14,right:14} spacing: 6
                 draw_bg.color: #xFFFFFF draw_bg.border_radius: 10.0
                 plan_item2_header := View{ width: Fill height: Fit flow: Right spacing: 6
-                    plan_item2_idx := Label{ text: "第 3 条" draw_text.color: #x1C1C1E draw_text.text_style.font_size: 13 }
+                    plan_item2_idx := Label{ text: "第 3 条" draw_text.color: #x1F2329 draw_text.text_style.font_size: 13 }
                     plan_item2_edit := ButtonFlat{ text: "✎ 编辑" height: 24 padding: Inset{left:8,right:8}
-                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                        draw_bg +: { color: #xF2F3F5 border_radius: 12.0 } draw_text +: { color: #x1F2329 } }
                     plan_item2_up := ButtonFlat{ text: "↑ 上移" height: 24 padding: Inset{left:8,right:8}
-                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                        draw_bg +: { color: #xF2F3F5 border_radius: 12.0 } draw_text +: { color: #x1F2329 } }
                     plan_item2_down := ButtonFlat{ text: "↓ 下移" height: 24 padding: Inset{left:8,right:8}
-                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                        draw_bg +: { color: #xF2F3F5 border_radius: 12.0 } draw_text +: { color: #x1F2329 } }
                     plan_item2_del := ButtonFlat{ text: "🗑 删除" height: 24 padding: Inset{left:8,right:8}
-                        draw_bg +: { color: #xB3541E border_radius: 12.0 } draw_text +: { color: #xFFFFFF } }
+                        draw_bg +: { color: #xF54A45 border_radius: 12.0 } draw_text +: { color: #xFFFFFF } }
                 }
-                plan_item2_body := Label{ text: "(空)" draw_text.color: #x8E8E93 draw_text.text_style.font_size: 12 }
+                plan_item2_body := Label{ text: "(空)" draw_text.color: #x646A73 draw_text.text_style.font_size: 12 }
             }
             plan_item3 := View{ width: Fill height: Fit flow: Down padding: Inset{top:8,bottom:8,left:14,right:14} spacing: 6
                 draw_bg.color: #xFFFFFF draw_bg.border_radius: 10.0
                 plan_item3_header := View{ width: Fill height: Fit flow: Right spacing: 6
-                    plan_item3_idx := Label{ text: "第 4 条" draw_text.color: #x1C1C1E draw_text.text_style.font_size: 13 }
+                    plan_item3_idx := Label{ text: "第 4 条" draw_text.color: #x1F2329 draw_text.text_style.font_size: 13 }
                     plan_item3_edit := ButtonFlat{ text: "✎ 编辑" height: 24 padding: Inset{left:8,right:8}
-                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                        draw_bg +: { color: #xF2F3F5 border_radius: 12.0 } draw_text +: { color: #x1F2329 } }
                     plan_item3_up := ButtonFlat{ text: "↑ 上移" height: 24 padding: Inset{left:8,right:8}
-                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                        draw_bg +: { color: #xF2F3F5 border_radius: 12.0 } draw_text +: { color: #x1F2329 } }
                     plan_item3_down := ButtonFlat{ text: "↓ 下移" height: 24 padding: Inset{left:8,right:8}
-                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                        draw_bg +: { color: #xF2F3F5 border_radius: 12.0 } draw_text +: { color: #x1F2329 } }
                     plan_item3_del := ButtonFlat{ text: "🗑 删除" height: 24 padding: Inset{left:8,right:8}
-                        draw_bg +: { color: #xB3541E border_radius: 12.0 } draw_text +: { color: #xFFFFFF } }
+                        draw_bg +: { color: #xF54A45 border_radius: 12.0 } draw_text +: { color: #xFFFFFF } }
                 }
-                plan_item3_body := Label{ text: "(空)" draw_text.color: #x8E8E93 draw_text.text_style.font_size: 12 }
+                plan_item3_body := Label{ text: "(空)" draw_text.color: #x646A73 draw_text.text_style.font_size: 12 }
             }
             plan_item4 := View{ width: Fill height: Fit flow: Down padding: Inset{top:8,bottom:8,left:14,right:14} spacing: 6
                 draw_bg.color: #xFFFFFF draw_bg.border_radius: 10.0
                 plan_item4_header := View{ width: Fill height: Fit flow: Right spacing: 6
-                    plan_item4_idx := Label{ text: "第 5 条" draw_text.color: #x1C1C1E draw_text.text_style.font_size: 13 }
+                    plan_item4_idx := Label{ text: "第 5 条" draw_text.color: #x1F2329 draw_text.text_style.font_size: 13 }
                     plan_item4_edit := ButtonFlat{ text: "✎ 编辑" height: 24 padding: Inset{left:8,right:8}
-                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                        draw_bg +: { color: #xF2F3F5 border_radius: 12.0 } draw_text +: { color: #x1F2329 } }
                     plan_item4_up := ButtonFlat{ text: "↑ 上移" height: 24 padding: Inset{left:8,right:8}
-                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                        draw_bg +: { color: #xF2F3F5 border_radius: 12.0 } draw_text +: { color: #x1F2329 } }
                     plan_item4_down := ButtonFlat{ text: "↓ 下移" height: 24 padding: Inset{left:8,right:8}
-                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                        draw_bg +: { color: #xF2F3F5 border_radius: 12.0 } draw_text +: { color: #x1F2329 } }
                     plan_item4_del := ButtonFlat{ text: "🗑 删除" height: 24 padding: Inset{left:8,right:8}
-                        draw_bg +: { color: #xB3541E border_radius: 12.0 } draw_text +: { color: #xFFFFFF } }
+                        draw_bg +: { color: #xF54A45 border_radius: 12.0 } draw_text +: { color: #xFFFFFF } }
                 }
-                plan_item4_body := Label{ text: "(空)" draw_text.color: #x8E8E93 draw_text.text_style.font_size: 12 }
+                plan_item4_body := Label{ text: "(空)" draw_text.color: #x646A73 draw_text.text_style.font_size: 12 }
             }
             plan_item5 := View{ width: Fill height: Fit flow: Down padding: Inset{top:8,bottom:8,left:14,right:14} spacing: 6
                 draw_bg.color: #xFFFFFF draw_bg.border_radius: 10.0
                 plan_item5_header := View{ width: Fill height: Fit flow: Right spacing: 6
-                    plan_item5_idx := Label{ text: "第 6 条" draw_text.color: #x1C1C1E draw_text.text_style.font_size: 13 }
+                    plan_item5_idx := Label{ text: "第 6 条" draw_text.color: #x1F2329 draw_text.text_style.font_size: 13 }
                     plan_item5_edit := ButtonFlat{ text: "✎ 编辑" height: 24 padding: Inset{left:8,right:8}
-                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                        draw_bg +: { color: #xF2F3F5 border_radius: 12.0 } draw_text +: { color: #x1F2329 } }
                     plan_item5_up := ButtonFlat{ text: "↑ 上移" height: 24 padding: Inset{left:8,right:8}
-                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                        draw_bg +: { color: #xF2F3F5 border_radius: 12.0 } draw_text +: { color: #x1F2329 } }
                     plan_item5_down := ButtonFlat{ text: "↓ 下移" height: 24 padding: Inset{left:8,right:8}
-                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                        draw_bg +: { color: #xF2F3F5 border_radius: 12.0 } draw_text +: { color: #x1F2329 } }
                     plan_item5_del := ButtonFlat{ text: "🗑 删除" height: 24 padding: Inset{left:8,right:8}
-                        draw_bg +: { color: #xB3541E border_radius: 12.0 } draw_text +: { color: #xFFFFFF } }
+                        draw_bg +: { color: #xF54A45 border_radius: 12.0 } draw_text +: { color: #xFFFFFF } }
                 }
-                plan_item5_body := Label{ text: "(空)" draw_text.color: #x8E8E93 draw_text.text_style.font_size: 12 }
+                plan_item5_body := Label{ text: "(空)" draw_text.color: #x646A73 draw_text.text_style.font_size: 12 }
             }
             plan_item6 := View{ width: Fill height: Fit flow: Down padding: Inset{top:8,bottom:8,left:14,right:14} spacing: 6
                 draw_bg.color: #xFFFFFF draw_bg.border_radius: 10.0
                 plan_item6_header := View{ width: Fill height: Fit flow: Right spacing: 6
-                    plan_item6_idx := Label{ text: "第 7 条" draw_text.color: #x1C1C1E draw_text.text_style.font_size: 13 }
+                    plan_item6_idx := Label{ text: "第 7 条" draw_text.color: #x1F2329 draw_text.text_style.font_size: 13 }
                     plan_item6_edit := ButtonFlat{ text: "✎ 编辑" height: 24 padding: Inset{left:8,right:8}
-                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                        draw_bg +: { color: #xF2F3F5 border_radius: 12.0 } draw_text +: { color: #x1F2329 } }
                     plan_item6_up := ButtonFlat{ text: "↑ 上移" height: 24 padding: Inset{left:8,right:8}
-                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                        draw_bg +: { color: #xF2F3F5 border_radius: 12.0 } draw_text +: { color: #x1F2329 } }
                     plan_item6_down := ButtonFlat{ text: "↓ 下移" height: 24 padding: Inset{left:8,right:8}
-                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                        draw_bg +: { color: #xF2F3F5 border_radius: 12.0 } draw_text +: { color: #x1F2329 } }
                     plan_item6_del := ButtonFlat{ text: "🗑 删除" height: 24 padding: Inset{left:8,right:8}
-                        draw_bg +: { color: #xB3541E border_radius: 12.0 } draw_text +: { color: #xFFFFFF } }
+                        draw_bg +: { color: #xF54A45 border_radius: 12.0 } draw_text +: { color: #xFFFFFF } }
                 }
-                plan_item6_body := Label{ text: "(空)" draw_text.color: #x8E8E93 draw_text.text_style.font_size: 12 }
+                plan_item6_body := Label{ text: "(空)" draw_text.color: #x646A73 draw_text.text_style.font_size: 12 }
             }
             plan_item7 := View{ width: Fill height: Fit flow: Down padding: Inset{top:8,bottom:8,left:14,right:14} spacing: 6
                 draw_bg.color: #xFFFFFF draw_bg.border_radius: 10.0
                 plan_item7_header := View{ width: Fill height: Fit flow: Right spacing: 6
-                    plan_item7_idx := Label{ text: "第 8 条" draw_text.color: #x1C1C1E draw_text.text_style.font_size: 13 }
+                    plan_item7_idx := Label{ text: "第 8 条" draw_text.color: #x1F2329 draw_text.text_style.font_size: 13 }
                     plan_item7_edit := ButtonFlat{ text: "✎ 编辑" height: 24 padding: Inset{left:8,right:8}
-                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                        draw_bg +: { color: #xF2F3F5 border_radius: 12.0 } draw_text +: { color: #x1F2329 } }
                     plan_item7_up := ButtonFlat{ text: "↑ 上移" height: 24 padding: Inset{left:8,right:8}
-                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                        draw_bg +: { color: #xF2F3F5 border_radius: 12.0 } draw_text +: { color: #x1F2329 } }
                     plan_item7_down := ButtonFlat{ text: "↓ 下移" height: 24 padding: Inset{left:8,right:8}
-                        draw_bg +: { color: #xF6F6F8 border_radius: 12.0 } draw_text +: { color: #x1C1C1E } }
+                        draw_bg +: { color: #xF2F3F5 border_radius: 12.0 } draw_text +: { color: #x1F2329 } }
                     plan_item7_del := ButtonFlat{ text: "🗑 删除" height: 24 padding: Inset{left:8,right:8}
-                        draw_bg +: { color: #xB3541E border_radius: 12.0 } draw_text +: { color: #xFFFFFF } }
+                        draw_bg +: { color: #xF54A45 border_radius: 12.0 } draw_text +: { color: #xFFFFFF } }
                 }
-                plan_item7_body := Label{ text: "(空)" draw_text.color: #x8E8E93 draw_text.text_style.font_size: 12 }
+                plan_item7_body := Label{ text: "(空)" draw_text.color: #x646A73 draw_text.text_style.font_size: 12 }
             }
         }
 
@@ -498,36 +547,37 @@ script_mod! {
         //     字段 labels 由 item_fields(plan_kind) 决定 (image=3, video=6, ppt=5, ...)
         plan_editor_card := View{
             width: Fill height: Fit
+            visible: false
             flow: Down spacing: 4
             padding: Inset{top: 8, bottom: 8, left: 10, right: 10}
-            draw_bg.color: #xFFF5EC
+            draw_bg.color: #xF0F5FF
             draw_bg.border_radius: 8.0
             draw_bg.border_size: 1.0
-            draw_bg.border_color: #xFF6B35
+            draw_bg.border_color: #x3370FF
 
             plan_editor_title := Label{ text: "✎ 编辑条目 (按 Tab 切换字段)"
-                draw_text.color: #x1C1C1E draw_text.text_style.font_size: 12 }
+                draw_text.color: #x1F2329 draw_text.text_style.font_size: 12 }
             plan_field0 := TextInput{ width: Fill height: 28 empty_text: "field 0"
-                draw_bg +: { color: #xFFFFFF color_focus: #xF6F6F8 border_radius: 6.0 } }
+                draw_bg +: { color: #xFFFFFF color_focus: #xF2F3F5 border_radius: 6.0 } }
             plan_field1 := TextInput{ width: Fill height: 28 empty_text: "field 1"
-                draw_bg +: { color: #xFFFFFF color_focus: #xF6F6F8 border_radius: 6.0 } }
+                draw_bg +: { color: #xFFFFFF color_focus: #xF2F3F5 border_radius: 6.0 } }
             plan_field2 := TextInput{ width: Fill height: 28 empty_text: "field 2"
-                draw_bg +: { color: #xFFFFFF color_focus: #xF6F6F8 border_radius: 6.0 } }
+                draw_bg +: { color: #xFFFFFF color_focus: #xF2F3F5 border_radius: 6.0 } }
             plan_field3 := TextInput{ width: Fill height: 28 empty_text: "field 3"
-                draw_bg +: { color: #xFFFFFF color_focus: #xF6F6F8 border_radius: 6.0 } }
+                draw_bg +: { color: #xFFFFFF color_focus: #xF2F3F5 border_radius: 6.0 } }
             plan_field4 := TextInput{ width: Fill height: 28 empty_text: "field 4"
-                draw_bg +: { color: #xFFFFFF color_focus: #xF6F6F8 border_radius: 6.0 } }
+                draw_bg +: { color: #xFFFFFF color_focus: #xF2F3F5 border_radius: 6.0 } }
             plan_field5 := TextInput{ width: Fill height: 28 empty_text: "field 5"
-                draw_bg +: { color: #xFFFFFF color_focus: #xF6F6F8 border_radius: 6.0 } }
+                draw_bg +: { color: #xFFFFFF color_focus: #xF2F3F5 border_radius: 6.0 } }
             View{ width: Fill height: Fit flow: Right spacing: 6
                 plan_editor_save := ButtonFlat{ text: "💾 写入"
                     height: 28 padding: Inset{left:12,right:12}
-                    draw_bg +: { color: #x2E7D5B border_radius: 14.0 }
+                    draw_bg +: { color: #x34C724 border_radius: 14.0 }
                     draw_text +: { color: #xFFFFFF } }
                 plan_editor_cancel := ButtonFlat{ text: "✗ 取消"
                     height: 28 padding: Inset{left:12,right:12}
-                    draw_bg +: { color: #xF6F6F8 border_radius: 14.0 }
-                    draw_text +: { color: #x1C1C1E } }
+                    draw_bg +: { color: #xF2F3F5 border_radius: 14.0 }
+                    draw_text +: { color: #x1F2329 } }
             }
         }
 
@@ -537,69 +587,81 @@ script_mod! {
             flow: Right spacing: 8
             plan_item_add := ButtonFlat{ text: "➕ 新增一条"
                 height: 36 padding: Inset{left:14,right:14}
-                draw_bg +: { color: #x2E7D5B color_hover: #x4E9D7B border_radius: 18.0 }
+                draw_bg +: { color: #x34C724 color_hover: #x54D644 border_radius: 18.0 }
                 draw_text +: { color: #xFFFFFF } }
             plan_save_works := ButtonFlat{ text: "💾 保存到 works.json"
                 height: 36 padding: Inset{left:14,right:14}
-                draw_bg +: { color: #xFF6B35 color_hover: #xFF8866 border_radius: 18.0 }
+                draw_bg +: { color: #x3370FF color_hover: #x5B8CFF border_radius: 18.0 }
                 draw_text +: { color: #xFFFFFF } }
             plan_gen_image := ButtonFlat{ text: "🎨 AI 配图(首条 image_prompt)"
                 height: 36 padding: Inset{left:14,right:14}
-                draw_bg +: { color: #x4A6FA5 color_hover: #x6A8FC5 border_radius: 18.0 }
+                draw_bg +: { color: #x245BDB color_hover: #x4A79F0 border_radius: 18.0 }
                 draw_text +: { color: #xFFFFFF } }
             plan_to_export := ButtonFlat{ text: "📤 导出 →"
                 height: 36 padding: Inset{left:14,right:14}
-                draw_bg +: { color: #x8E8E93 border_radius: 18.0 }
-                draw_text +: { color: #x1C1C1E } }
+                draw_bg +: { color: #x646A73 border_radius: 18.0 }
+                draw_text +: { color: #x1F2329 } }
         }
         plan_image_url_label := Label{ text: "(尚未配图)"
-            draw_text.color: #x8E8E93 draw_text.text_style.font_size: 11 }
+            draw_text.color: #x646A73 draw_text.text_style.font_size: 11 }
+        }
     }
 
     let ExportView = View{
         width: Fill height: Fill
         flow: Down
-        padding: Inset{top: 16, bottom: 16, left: 24, right: 24}
-        spacing: 8
-        draw_bg.color: #xF6F6F8
+        draw_bg.color: #xFFFFFF
 
-        export_title := Label{
-            text: "导出"
-            draw_text.color: #x1C1C1E
-            draw_text.text_style.font_size: 22
+        View{
+            width: Fill height: Fit
+            flow: Down
+            spacing: 2
+            padding: Inset{top: 20, bottom: 10, left: 28, right: 28}
+            export_title := Label{
+                text: "导出"
+                draw_text.color: #x1F2329
+                draw_text.text_style.font_size: 20
+            }
+            export_subtitle := Label{
+                text: "8 种格式一键复制:Markdown / 公众号 / Notion / SRT / 制作包 / Marp / Markmap"
+                draw_text.color: #x8F959E
+                draw_text.text_style.font_size: 12
+            }
         }
-        export_subtitle := Label{
-            text: "C14 — 8 格式 chip + 大 Card 预览 + 复制按钮(全部 8 端到端可点)"
-            draw_text.color: #x8E8E93
-            draw_text.text_style.font_size: 12
-        }
+
+        ScrollYView{
+            width: Fill height: Fill
+            flow: Down
+            spacing: 10
+            padding: Inset{top: 6, bottom: 20, left: 28, right: 28}
+            draw_bg +: { color: #xF2F3F5 }
 
         // 8 格式 chip 横排
         View{
             width: Fill height: Fit
             flow: Right spacing: 4
             export_f1 := ButtonFlat{ text: "Markdown" height: 28 padding: Inset{left:10,right:10}
-                draw_bg +: { color: #xFF6B35 border_radius: 14.0 } draw_text +: { color: #xFFFFFF } }
+                draw_bg +: { color: #x3370FF border_radius: 14.0 } draw_text +: { color: #xFFFFFF } }
             export_f2 := ButtonFlat{ text: "公众号" height: 28 padding: Inset{left:10,right:10}
-                draw_bg +: { color: #xF6F6F8 border_radius: 14.0 } draw_text +: { color: #x1C1C1E } }
+                draw_bg +: { color: #xF2F3F5 border_radius: 14.0 } draw_text +: { color: #x1F2329 } }
             export_f3 := ButtonFlat{ text: "Notion" height: 28 padding: Inset{left:10,right:10}
-                draw_bg +: { color: #xF6F6F8 border_radius: 14.0 } draw_text +: { color: #x1C1C1E } }
+                draw_bg +: { color: #xF2F3F5 border_radius: 14.0 } draw_text +: { color: #x1F2329 } }
             export_f4 := ButtonFlat{ text: "SRT 字幕" height: 28 padding: Inset{left:10,right:10}
-                draw_bg +: { color: #xF6F6F8 border_radius: 14.0 } draw_text +: { color: #x1C1C1E } }
+                draw_bg +: { color: #xF2F3F5 border_radius: 14.0 } draw_text +: { color: #x1F2329 } }
             export_f5 := ButtonFlat{ text: "视频制作包" height: 28 padding: Inset{left:10,right:10}
-                draw_bg +: { color: #xF6F6F8 border_radius: 14.0 } draw_text +: { color: #x1C1C1E } }
+                draw_bg +: { color: #xF2F3F5 border_radius: 14.0 } draw_text +: { color: #x1F2329 } }
             export_f6 := ButtonFlat{ text: "Marp 演示" height: 28 padding: Inset{left:10,right:10}
-                draw_bg +: { color: #xF6F6F8 border_radius: 14.0 } draw_text +: { color: #x1C1C1E } }
+                draw_bg +: { color: #xF2F3F5 border_radius: 14.0 } draw_text +: { color: #x1F2329 } }
             export_f7 := ButtonFlat{ text: "Markmap" height: 28 padding: Inset{left:10,right:10}
-                draw_bg +: { color: #xF6F6F8 border_radius: 14.0 } draw_text +: { color: #x1C1C1E } }
+                draw_bg +: { color: #xF2F3F5 border_radius: 14.0 } draw_text +: { color: #x1F2329 } }
             export_f8 := ButtonFlat{ text: "全部预览" height: 28 padding: Inset{left:10,right:10}
-                draw_bg +: { color: #xE5E5EA border_radius: 14.0 } draw_text +: { color: #x1C1C1E } }
+                draw_bg +: { color: #xDEE0E3 border_radius: 14.0 } draw_text +: { color: #x1F2329 } }
         }
 
         // 适用格式提示
         export_hint_label := Label{
             text: "(选中一个格式 → 大 Card 实时渲染 → 复制)"
-            draw_text.color: #x8E8E93
+            draw_text.color: #x646A73
             draw_text.text_style.font_size: 11
         }
 
@@ -611,11 +673,11 @@ script_mod! {
             draw_bg.color: #xFFFFFF
             draw_bg.border_radius: 10.0
             draw_bg.border_size: 1.0
-            draw_bg.border_color: #xE5E5EA
+            draw_bg.border_color: #xDEE0E3
 
             export_preview_label := Label{
                 text: "(点击上方 8 个 chip 中的任一个,大 Card 会渲染该格式)"
-                draw_text.color: #x8E8E93
+                draw_text.color: #x646A73
                 draw_text.text_style.font_size: 12
             }
         }
@@ -626,39 +688,51 @@ script_mod! {
             flow: Right spacing: 8
             export_copy := ButtonFlat{ text: "📋 复制到剪贴板"
                 height: 40 padding: Inset{left:18,right:18}
-                draw_bg +: { color: #xFF6B35 color_hover: #xFF8866 border_radius: 20.0 }
+                draw_bg +: { color: #x3370FF color_hover: #x5B8CFF border_radius: 20.0 }
                 draw_text +: { color: #xFFFFFF } }
             export_back := ButtonFlat{ text: "← 返回"
                 height: 40 padding: Inset{left:18,right:18}
-                draw_bg +: { color: #xF6F6F8 border_radius: 20.0 }
-                draw_text +: { color: #x1C1C1E } }
+                draw_bg +: { color: #xF2F3F5 border_radius: 20.0 }
+                draw_text +: { color: #x1F2329 } }
         }
 
         // 当前格式 + 字数状态
         export_status_label := Label{
             text: "(空)"
-            draw_text.color: #x8E8E93
+            draw_text.color: #x646A73
             draw_text.text_style.font_size: 11
+        }
         }
     }
 
     let SettingsView = View{
         width: Fill height: Fill
         flow: Down
-        padding: Inset{top: 16, bottom: 16, left: 24, right: 24}
-        spacing: 12
-        draw_bg.color: #xF6F6F8
+        draw_bg.color: #xFFFFFF
 
-        settings_title := Label{
-            text: "设置"
-            draw_text.color: #x1C1C1E
-            draw_text.text_style.font_size: 22
+        View{
+            width: Fill height: Fit
+            flow: Down
+            spacing: 2
+            padding: Inset{top: 20, bottom: 10, left: 28, right: 28}
+            settings_title := Label{
+                text: "设置"
+                draw_text.color: #x1F2329
+                draw_text.text_style.font_size: 20
+            }
+            settings_subtitle := Label{
+                text: "Agnes 3.0 Flash / 2.5 Image / 2.5 Video · OpenAI 兼容"
+                draw_text.color: #x8F959E
+                draw_text.text_style.font_size: 12
+            }
         }
-        settings_subtitle := Label{
-            text: "Agnes 3.0 Flash / 2.5 Image / 2.5 Video · OpenAI 兼容"
-            draw_text.color: #x8E8E93
-            draw_text.text_style.font_size: 12
-        }
+
+        ScrollYView{
+            width: Fill height: Fill
+            flow: Down
+            spacing: 12
+            padding: Inset{top: 6, bottom: 20, left: 28, right: 28}
+            draw_bg +: { color: #xF2F3F5 }
 
         // API key card
         View{
@@ -668,18 +742,18 @@ script_mod! {
             draw_bg.color: #xFFFFFF
             draw_bg.border_radius: 10.0
             draw_bg.border_size: 1.0
-            draw_bg.border_color: #xE5E5EA
+            draw_bg.border_color: #xDEE0E3
 
             Label{
                 text: "🔑 API key (apihub.agnes-ai.com)"
-                draw_text.color: #x1C1C1E
+                draw_text.color: #x1F2329
                 draw_text.text_style.font_size: 14
             }
             settings_key_input := TextInput{
                 width: Fill height: 32
                 empty_text: "sk-..."
                 draw_bg +: {
-                    color: #xF6F6F8
+                    color: #xF2F3F5
                     color_focus: #xFFFFFF
                     border_radius: 8.0
                 }
@@ -691,8 +765,8 @@ script_mod! {
                     text: "保存"
                     height: 32 padding: Inset{left: 14, right: 14}
                     draw_bg +: {
-                        color: #xFF6B35
-                        color_hover: #xFF8866
+                        color: #x3370FF
+                        color_hover: #x5B8CFF
                         border_radius: 16.0
                     }
                     draw_text +: { color: #xFFFFFF }
@@ -701,8 +775,8 @@ script_mod! {
                     text: "测试连接"
                     height: 32 padding: Inset{left: 14, right: 14}
                     draw_bg +: {
-                        color: #x2E7D5B
-                        color_hover: #x4E9D7B
+                        color: #x34C724
+                        color_hover: #x54D644
                         border_radius: 16.0
                     }
                     draw_text +: { color: #xFFFFFF }
@@ -718,26 +792,26 @@ script_mod! {
             draw_bg.color: #xFFFFFF
             draw_bg.border_radius: 10.0
             draw_bg.border_size: 1.0
-            draw_bg.border_color: #xE5E5EA
+            draw_bg.border_color: #xDEE0E3
 
             Label{
                 text: "🎨 主题"
-                draw_text.color: #x1C1C1E
+                draw_text.color: #x1F2329
                 draw_text.text_style.font_size: 14
             }
             settings_theme_chip := ButtonFlat{
                 text: "☀ 浅色(v0.6 默认)"
                 height: 32 padding: Inset{left: 14, right: 14}
                 draw_bg +: {
-                    color: #xF6F6F8
-                    color_hover: #xE5E5EA
+                    color: #xF2F3F5
+                    color_hover: #xDEE0E3
                     border_radius: 16.0
                 }
-                draw_text +: { color: #x1C1C1E }
+                draw_text +: { color: #x1F2329 }
             }
             Label{
                 text: "深色 / 系统:留 v0.6.1"
-                draw_text.color: #x8E8E93
+                draw_text.color: #x646A73
                 draw_text.text_style.font_size: 11
             }
         }
@@ -750,74 +824,103 @@ script_mod! {
             draw_bg.color: #xFFFFFF
             draw_bg.border_radius: 10.0
             draw_bg.border_size: 1.0
-            draw_bg.border_color: #xE5E5EA
+            draw_bg.border_color: #xDEE0E3
 
             Label{
                 text: "📊 配额 (今日)"
-                draw_text.color: #x1C1C1E
+                draw_text.color: #x1F2329
                 draw_text.text_style.font_size: 14
             }
             settings_usage_label := Label{
                 text: "— 调用 / — tokens(usage.json 累计)"
-                draw_text.color: #x8E8E93
+                draw_text.color: #x646A73
                 draw_text.text_style.font_size: 12
             }
         }
+        }
     }
 
-    // ---------- 5-tab bottom bar ----------
-    // Each tab is a ButtonFlat with a single "icon label" line. The icon
-    // is drawn larger via inline font_size; the label is the second line.
-    // We rely on `set_text()` from Rust to keep the 5 tabs distinct and
-    // on `clicked(actions)` in MatchEvent to detect taps (View doesn't
-    // have a built-in click action; ButtonFlat does).
+    // ---------- 飞书风左侧导航 ----------
+    // 每个条目一对 off/on ButtonFlat:goto() 用 set_visible 切换选中态
+    // (makepad 2.0 没有 apply_over,运行时换肤只有 set_visible/set_text)。
 
-    let TabBtn = ButtonFlat{
-        width: Fill height: 56
-        text: "◐\n广场"
+    let NavBtnOff = ButtonFlat{
+        width: Fill height: 40
+        text: "○"
         draw_bg +: {
-            color: #xF6F6F8
-            border_radius: 10.0
-            color_hover: #xE5E5EA
+            color: #xF7F8FA
+            color_hover: #xE8EAED
+            border_radius: 8.0
+            border_size: 0.0
         }
         draw_text +: {
-            color: #x8E8E93
+            color: #x1F2329
+            text_style.font_size: 14
         }
     }
 
-    let TabBar = View{
-        width: Fill height: 60
-        flow: Right
-        padding: Inset{top: 4, bottom: 4, left: 8, right: 8}
-        spacing: 4
-        align: Align{y: 0.5}
-        draw_bg.color: #xFFFFFF
-        draw_bg.border_size: 1.0
-        draw_bg.border_color: #xE5E5EA
-
-        tab_home := TabBtn{}
-        tab_compose := TabBtn{}
-        tab_studio := TabBtn{}
-        tab_plan := TabBtn{}
-        tab_settings := TabBtn{}
+    let NavBtnOn = ButtonFlat{
+        width: Fill height: 40
+        text: "○"
+        draw_bg +: {
+            color: #xE1EFFF
+            color_hover: #xD6E8FF
+            border_radius: 8.0
+            border_size: 0.0
+        }
+        draw_text +: {
+            color: #x3370FF
+            text_style.font_size: 14
+        }
     }
 
-    let AppHeader = View{
-        width: Fill height: Fit
+    let Sidebar = View{
+        width: 220 height: Fill
         flow: Down
-        spacing: 4
-        padding: Inset{top: 12, bottom: 12, left: 24, right: 24}
-        draw_bg.color: #xFFFFFF
+        spacing: 2
+        padding: Inset{top: 12, bottom: 14, left: 10, right: 10}
+        draw_bg.color: #xF7F8FA
+        draw_bg.border_size: 1.0
+        draw_bg.border_color: #xDEE0E3
 
-        title := Label{
-            text: "OctoStudio v0.6"
-            draw_text.color: #x1C1C1E
-            draw_text.text_style.font_size: 22
+        // 品牌区
+        View{
+            width: Fill height: Fit
+            flow: Right
+            spacing: 8
+            align: Align{y: 0.5}
+            padding: Inset{top: 6, bottom: 14, left: 8, right: 8}
+            brand_logo := Label{
+                text: "◆"
+                draw_text.color: #x3370FF
+                draw_text.text_style.font_size: 18
+            }
+            brand_name := Label{
+                text: "OctoStudio"
+                draw_text.color: #x1F2329
+                draw_text.text_style.font_size: 16
+            }
         }
-        subtitle := Label{
-            text: "Native Makepad · 6 屏 + 真实 Agnes AI · C3 渲染骨架就位"
-            draw_text.color: #x8E8E93
-            draw_text.text_style.font_size: 12
+
+        nav_home_off := NavBtnOff{ text: "◐  广场" }
+        nav_home_on := NavBtnOn{ text: "◐  广场" }
+        nav_compose_off := NavBtnOff{ text: "✎  录入" }
+        nav_compose_on := NavBtnOn{ text: "✎  录入" }
+        nav_studio_off := NavBtnOff{ text: "◇  工坊" }
+        nav_studio_on := NavBtnOn{ text: "◇  工坊" }
+        nav_plan_off := NavBtnOff{ text: "▤  计划" }
+        nav_plan_on := NavBtnOn{ text: "▤  计划" }
+        nav_settings_off := NavBtnOff{ text: "⚙  设置" }
+        nav_settings_on := NavBtnOn{ text: "⚙  设置" }
+
+        // 弹性空白
+        View{ width: Fill height: Fill }
+
+        nav_status := Label{
+            width: Fill
+            text: "○ 未配置 API key"
+            draw_text.color: #x8F959E
+            draw_text.text_style.font_size: 11
         }
     }
 
@@ -825,15 +928,17 @@ script_mod! {
         width: Fill height: Fit
         flow: Right
         spacing: 8
-        padding: Inset{top: 6, bottom: 6, left: 24, right: 24}
+        padding: Inset{top: 6, bottom: 6, left: 28, right: 28}
         align: Align{y: 0.5}
-        draw_bg.color: #xF6F6F8
+        draw_bg.color: #xFFFFFF
+        draw_bg.border_size: 1.0
+        draw_bg.border_color: #xE8EAED
 
         status_label := Label{
             width: Fill
-            text: "就绪 · 6 屏 + Settings + 底部 TabBar 渲染完成"
-            draw_text.color: #x8E8E93
-            draw_text.text_style.font_size: 12
+            text: "就绪"
+            draw_text.color: #x8F959E
+            draw_text.text_style.font_size: 11
         }
     }
 
@@ -847,27 +952,35 @@ script_mod! {
                     View{
                         width: Fill
                         height: Fill
-                        flow: Down
+                        flow: Right
                         spacing: 0
                         draw_bg.color: #xFFFFFF
 
-                        AppHeader{}
+                        // 左:飞书风侧边导航
+                        Sidebar{}
 
-                        screens := View{
+                        // 右:内容分屏(可滚动)+ 底部状态条
+                        View{
                             width: Fill height: Fill
-                            flow: Overlay
+                            flow: Down
+                            spacing: 0
                             draw_bg.color: #xFFFFFF
 
-                            home_view     := HomeView     { visible: true }
-                            compose_view  := ComposeView  { visible: false }
-                            studio_view   := StudioView   { visible: false }
-                            plan_view     := PlanView     { visible: false }
-                            export_view   := ExportView   { visible: false }
-                            settings_view := SettingsView { visible: false }
-                        }
+                            screens := View{
+                                width: Fill height: Fill
+                                flow: Overlay
+                                draw_bg.color: #xFFFFFF
 
-                        AppFooter{}
-                        TabBar{}
+                                home_view     := HomeView     { visible: true }
+                                compose_view  := ComposeView  { visible: false }
+                                studio_view   := StudioView   { visible: false }
+                                plan_view     := PlanView     { visible: false }
+                                export_view   := ExportView   { visible: false }
+                                settings_view := SettingsView { visible: false }
+                            }
+
+                            AppFooter{}
+                        }
                     }
                 }
             }
@@ -882,7 +995,8 @@ pub struct App {
 }
 
 impl App {
-    /// Goto — flip the visible flag of each screen, then request a redraw.
+    /// Goto — flip the visible flag of each screen + sidebar nav state,
+    /// then request a redraw.
     fn goto(&mut self, cx: &mut Cx, mode: Screen) {
         state().mode = mode;
         self.ui.view(cx, ids!(home_view))
@@ -897,7 +1011,35 @@ impl App {
             .set_visible(cx, mode == Screen::Export);
         self.ui.view(cx, ids!(settings_view))
             .set_visible(cx, mode == Screen::Settings);
+        self.apply_nav(cx, mode);
         self.ui.redraw(cx);
+    }
+
+    /// Sidebar selected state: show the `on` (blue tint) variant of the
+    /// active entry, the `off` variant of the rest. Export highlights none.
+    fn apply_nav(&mut self, cx: &mut Cx, mode: Screen) {
+        let entries = [
+            (Screen::Home, ids!(nav_home_on), ids!(nav_home_off)),
+            (Screen::Compose, ids!(nav_compose_on), ids!(nav_compose_off)),
+            (Screen::Studio, ids!(nav_studio_on), ids!(nav_studio_off)),
+            (Screen::Plan, ids!(nav_plan_on), ids!(nav_plan_off)),
+            (Screen::Settings, ids!(nav_settings_on), ids!(nav_settings_off)),
+        ];
+        for (screen, on, off) in entries {
+            self.ui.button(cx, on).set_visible(cx, mode == screen);
+            self.ui.button(cx, off).set_visible(cx, mode != screen);
+        }
+    }
+
+    /// Sidebar bottom status line — API key state.
+    fn refresh_nav_status(&mut self, cx: &mut Cx) {
+        let has_key = state()
+            .api_key
+            .as_deref()
+            .map(|k| !k.trim().is_empty())
+            .unwrap_or(false);
+        let text = if has_key { "● API 已连接" } else { "○ 未配置 API key" };
+        self.ui.label(cx, ids!(nav_status)).set_text(cx, text);
     }
 
     // -------- C12: Plan item actions (add / del / up / down / edit) --------
@@ -1645,23 +1787,34 @@ impl MatchEvent for App {
     }
 
     fn handle_actions(&mut self, cx: &mut Cx, actions: &Actions) {
-        if self.ui.button(cx, ids!(tab_home)).clicked(actions) {
+        // 侧边导航 — off/on 两态都接同一 goto
+        if self.ui.button(cx, ids!(nav_home_off)).clicked(actions)
+            || self.ui.button(cx, ids!(nav_home_on)).clicked(actions)
+        {
             self.goto(cx, Screen::Home);
             return;
         }
-        if self.ui.button(cx, ids!(tab_compose)).clicked(actions) {
+        if self.ui.button(cx, ids!(nav_compose_off)).clicked(actions)
+            || self.ui.button(cx, ids!(nav_compose_on)).clicked(actions)
+        {
             self.goto(cx, Screen::Compose);
             return;
         }
-        if self.ui.button(cx, ids!(tab_studio)).clicked(actions) {
+        if self.ui.button(cx, ids!(nav_studio_off)).clicked(actions)
+            || self.ui.button(cx, ids!(nav_studio_on)).clicked(actions)
+        {
             self.goto(cx, Screen::Studio);
             return;
         }
-        if self.ui.button(cx, ids!(tab_plan)).clicked(actions) {
+        if self.ui.button(cx, ids!(nav_plan_off)).clicked(actions)
+            || self.ui.button(cx, ids!(nav_plan_on)).clicked(actions)
+        {
             self.goto(cx, Screen::Plan);
             return;
         }
-        if self.ui.button(cx, ids!(tab_settings)).clicked(actions) {
+        if self.ui.button(cx, ids!(nav_settings_off)).clicked(actions)
+            || self.ui.button(cx, ids!(nav_settings_on)).clicked(actions)
+        {
             self.goto(cx, Screen::Settings);
             return;
         }
@@ -1875,16 +2028,23 @@ impl App {
     /// Initialize the 5 tab buttons with their proper emoji + label.
     /// Called from handle_startup after the widget tree is built.
     fn init_tabs(&mut self, cx: &mut Cx) {
-        let tabs: &[(&[LiveId], &str, &str)] = &[
-            (ids!(tab_home),     "◐", "广场"),
-            (ids!(tab_compose),  "✎", "录入"),
-            (ids!(tab_studio),   "◇", "工坊"),
-            (ids!(tab_plan),     "▤", "计划"),
-            (ids!(tab_settings), "⚙", "设置"),
+        let tabs: &[(&[LiveId], &str)] = &[
+            (ids!(nav_home_off),     "◐  广场"),
+            (ids!(nav_home_on),      "◐  广场"),
+            (ids!(nav_compose_off),  "✎  录入"),
+            (ids!(nav_compose_on),   "✎  录入"),
+            (ids!(nav_studio_off),   "◇  工坊"),
+            (ids!(nav_studio_on),    "◇  工坊"),
+            (ids!(nav_plan_off),     "▤  计划"),
+            (ids!(nav_plan_on),      "▤  计划"),
+            (ids!(nav_settings_off), "⚙  设置"),
+            (ids!(nav_settings_on),  "⚙  设置"),
         ];
-        for (id, emoji, label) in tabs.iter() {
-            self.ui.button(cx, id).set_text(cx, &format!("{}\n{}", emoji, label));
+        for (id, label) in tabs.iter() {
+            self.ui.button(cx, id).set_text(cx, label);
         }
+        self.apply_nav(cx, Screen::Home);
+        self.refresh_nav_status(cx);
         // Hydrate Settings fields from current config
         let api_key = state().api_key.clone().unwrap_or_default();
         if !api_key.is_empty() {
@@ -1945,6 +2105,7 @@ impl App {
                 } else { "***".to_string() };
                 self.ui.label(cx, ids!(status_label))
                     .set_text(cx, &format!("✓ API key 已保存 ({})", masked));
+                self.refresh_nav_status(cx);
             }
             Err(e) => {
                 self.ui.label(cx, ids!(status_label))
@@ -1976,6 +2137,7 @@ impl App {
                 let preview = if reply.len() > 40 { &reply[..40] } else { &reply };
                 self.ui.label(cx, ids!(status_label))
                     .set_text(cx, &format!("✓ 连接成功 — reply: {}", preview));
+                self.refresh_nav_status(cx);
             }
             Err(e) => {
                 self.ui.label(cx, ids!(status_label))
