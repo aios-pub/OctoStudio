@@ -45,12 +45,24 @@ script_mod! {
             draw_text.text_style.font_size: 22
         }
         home_subtitle := Label{
-            text: "今天共 N 件作品 · C3 渲染骨架就位"
+            text: "今天共 N 件作品 · C6 配图测试就位"
             draw_text.color: #x8E8E93
             draw_text.text_style.font_size: 12
         }
+        home_test_image := ButtonFlat{
+            text: "🎨 测试 AI 配图(需 API key)"
+            height: 36 padding: Inset{left: 14, right: 14}
+            draw_bg +: {
+                color: #xFF6B35
+                color_hover: #xFF8866
+                border_radius: 18.0
+            }
+            draw_text +: {
+                color: #xFFFFFF
+            }
+        }
         home_placeholder := Label{
-            text: "works 列表 / 搜索 / 排序 chip / 场景网格 — C4-C5 落地"
+            text: "works 列表 / 搜索 / 排序 chip / 场景网格 — 后续 commit"
             draw_text.color: #x8E8E93
             draw_text.text_style.font_size: 12
         }
@@ -348,6 +360,10 @@ impl MatchEvent for App {
             self.goto(cx, Screen::Settings);
             return;
         }
+        if self.ui.button(cx, ids!(home_test_image)).clicked(actions) {
+            self.test_image(cx);
+            return;
+        }
     }
 }
 
@@ -377,5 +393,40 @@ impl App {
         for (id, emoji, label) in tabs.iter() {
             self.ui.button(cx, id).set_text(cx, &format!("{}\n{}", emoji, label));
         }
+    }
+
+    /// Test the image API (C6). Reads the API key from APP_STATE, calls
+    /// Agnes 2.5 Flash `generate()`, and surfaces the result (or error)
+    /// in the status label.
+    fn test_image(&mut self, cx: &mut Cx) {
+        use octostudio_ai::ImageClient;
+        let key = state().api_key.clone();
+        let key = match key {
+            Some(k) if !k.is_empty() => k,
+            _ => {
+                self.ui.label(cx, ids!(status_label))
+                    .set_text(cx, "⚠ 未设置 API key — 打开 设置 输入");
+                return;
+            }
+        };
+        let client = ImageClient::new(key);
+        self.ui.label(cx, ids!(status_label))
+            .set_text(cx, "AI 配图中…(5–30 秒)");
+        self.ui.redraw(cx);
+        match client.generate(
+            "a luminous floating city above a misty canyon at sunrise, cinematic realism",
+            "1K",
+            "16:9",
+        ) {
+            Ok(url) => {
+                let msg = format!("✓ 配图 URL: {}", &url[..url.len().min(80)]);
+                self.ui.label(cx, ids!(status_label)).set_text(cx, &msg);
+            }
+            Err(e) => {
+                let msg = format!("✗ 配图失败: {e}");
+                self.ui.label(cx, ids!(status_label)).set_text(cx, &msg);
+            }
+        }
+        self.ui.redraw(cx);
     }
 }

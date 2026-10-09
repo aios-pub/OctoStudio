@@ -12,10 +12,12 @@
 //!   [`octostudio_core::OctostudioError::Http`].
 
 pub mod client;
+pub mod image;
 pub mod prompts;
 pub mod text;
 
 pub use client::{HttpClient, HttpResponse};
+pub use image::ImageClient;
 pub use text::{ChatMessage, ChatRequest, ChatResponse, TextClient};
 
 /// Agnes API hub. Override with `OCTOSTUDIO_AGNES_BASE_URL` for testing.
