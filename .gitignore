@@ -7,3 +7,6 @@ target/
 .idea/
 *.iml
 .vscode/
+
+# OctoStudio v0.6 native — Cargo workspace lock 不入库
+native/Cargo.lock

@@ -2,6 +2,8 @@
 
 > **言出法随,意到文成。"一句话"——拆开是意图,合上是产物。**
 
+> **v0.6 已发布** — 完整 Rust + [Makepad](https://github.com/makepad/makepad) 重写,接真实 [Agnes](https://www.agnes-ai.com) 三个模型(text 3.0 Flash / image 2.5 Flash / video 2.5),全部 OpenAI 兼容。Splash VM / card-host / octosense / rinx 不再支持。`cd native && cargo run --release` 跑起来,见 [`native/README.md`](native/README.md) 与 5 屏截图 `bundle/screenshots/v060-*.png`。
+
 <!-- 视频介绍(v12.6 · 199s @ 30fps · 23 景 · 5 幕叙事:痛 → 觉醒 → 演示 → 能力 → 实证)
      GitHub README <video> 标签被 strip → 动画 GIF 作内嵌预览;
      点击 GIF 跳转 B 站播放页(带音频/弹幕/高清);GitHub blob 页与 raw 下载作备选 -->
