@@ -1,11 +1,18 @@
-//! Visual design tokens for OctoStudio v0.6.
+//! OctoStudio v0.6 design tokens — color and typography, ported 1:1 from
+//! the splash bundle (v0.5-alpha-ui-polish).
 //!
-//! C2 will move tokens from the splash bundle (kept in v0.5-alpha-ui-polish) and
-//! add dark mode reservations:
-//! - Color: canvas / surface / hairline / ink / secondary / accent / accent_hover /
-//!   accent_soft / warm_hover / card_bg / chip_bg / danger / success / warning / info
-//! - Dark: dark_canvas / dark_surface / dark_ink / dark_secondary
-//! - Type: f_caption=11, f_meta=12, f_body=14, f_body_lg=16, f_section=18,
-//!   f_title=22, f_hero=26
+//! - [`color`] — 15 light-mode color tokens (ink / secondary / accent /
+//!   accent_hover / accent_soft / warm_hover / card_bg / chip_bg / canvas /
+//!   surface / hairline / danger / success / warning / info) + 4 dark-mode
+//!   reservations. Hex string format is the same as the splash `#xRRGGBB`,
+//!   so a single string can be re-used in `script_mod!` blocks.
+//! - [`font`]  — 7 type-scale tokens, 11→12→14→16→18→22→26 pt (caption /
+//!   meta / body / body_lg / section / title / hero).
+
+pub mod color;
+pub mod font;
+
+pub use color::*;
+pub use font::*;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

@@ -1,16 +1,22 @@
-//! Domain types and enums for OctoStudio v0.6.
+//! OctoStudio v0.6 domain types.
 //!
-//! C2 will populate this crate with:
-//! - `Work` (works.json entry)
-//! - `PlanItem` (generic plan row with `_k` stable id)
-//! - `Composition` (6-field video composition)
-//! - `HistoryEntry` (AI history per work, max 3)
-//! - `Screen` enum (Home | Compose | Studio | Plan | Export | Settings)
-//! - `PlanKind` enum (None | Image | Video | Ppt | Teardown | Titles | Xhs | Script | Mindmap | Quotes)
-//! - `ExportFormat` enum (Markdown | Wechat | Notion | Srt | Pack | Marp | Markmap)
-//! - `SortMode` enum
-//! - `UndoneEntry` enum
-//! - `OctostudioError` (thiserror)
-//! - Constants: SCENARIOS (10), THEMES (11), PRESETS (6), STYLES (8)
+//! Ported 1:1 from the splash bundle (v0.5-alpha-ui-polish) — every constant,
+//! enum and data structure here corresponds to a splash `let` or array.
+//!
+//! Modules:
+//! - [`enums`]   — [`Screen`], [`PlanKind`], [`ExportFormat`], [`SortMode`]
+//! - [`work`]    — [`Work`], [`PlanItem`], [`Composition`], [`HistoryEntry`]
+//! - [`constants`] — `SCENARIOS` (10), `THEMES` (11), `PRESETS` (6), `STYLES` (8)
+//! - [`error`]  — [`OctostudioError`]
+
+pub mod constants;
+pub mod enums;
+pub mod error;
+pub mod work;
+
+pub use constants::{PRESETS, SCENARIOS, STYLES, THEMES, Preset, Scenario, Style, Theme};
+pub use enums::{ExportFormat, PlanKind, Screen, SortMode};
+pub use error::{OctostudioError, OctostudioResult};
+pub use work::{Composition, HistoryEntry, PlanItem, Work};
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
