@@ -68,6 +68,9 @@ pub struct AppState {
 
     // video (C7)
     pub video_jobs: BTreeMap<String, VideoJobInfo>,
+
+    // C15: 70s AI 看门狗 Timer(由 App::arm_watchdog 写入 / App::disarm_watchdog 取消)
+    pub watchdog_timer: Option<makepad_widgets::event::Timer>,
 }
 
 #[derive(Debug, Clone)]
@@ -139,6 +142,7 @@ impl AppState {
             api_key: None,
             api_key_valid: false,
             video_jobs: BTreeMap::new(),
+            watchdog_timer: None,
         }
     }
 
@@ -167,6 +171,7 @@ mod tests {
         assert!(!s.busy);
         assert!(s.images_on);
         assert!(s.selected_ids.is_empty());
+        assert!(s.watchdog_timer.is_none(), "fresh state should not have a watchdog");
     }
 
     #[test]

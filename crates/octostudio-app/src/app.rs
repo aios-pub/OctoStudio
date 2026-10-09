@@ -1116,9 +1116,48 @@ impl App {
 
     /// 1 chip → 1 TextClient panel helper call → 1 result line in
     /// `ai_result_label`. With key: real API; without: friendly hint.
+    /// C15: Arm the 70s AI watchdog (splash `arm_watchdog` 1:1).
+    /// The actual reset happens when `Event::Timer(te)` arrives in
+    /// [`App::handle_event`] — see `handle_watchdog_timer_fire()`.
+    fn arm_watchdog(&mut self, cx: &mut Cx) {
+        // Disarm any previous timer first.
+        self.disarm_watchdog(cx);
+        if !state().busy { return; }
+        let timer = cx.start_timeout(70.0);
+        state().watchdog_timer = Some(timer);
+    }
+
+    /// C15: Cancel the watchdog. Call at the end of every AI handler
+    /// (success + error) so a fast response doesn't fire the 70s reset.
+    fn disarm_watchdog(&mut self, cx: &mut Cx) {
+        if let Some(timer) = state().watchdog_timer.take() {
+            cx.stop_timer(timer);
+        }
+    }
+
+    /// C15: When a Timer event arrives, check if it's our watchdog.
+    /// If `busy` is still true (the API call hasn't returned in 70s),
+    /// reset to false and surface a user-visible "AI 响应超时" status.
+    fn handle_watchdog_timer_fire(&mut self, cx: &mut Cx, timer_id: u64) {
+        let matches = state()
+            .watchdog_timer
+            .as_ref()
+            .map(|t| t.0 == timer_id)
+            .unwrap_or(false);
+        if !matches { return; }
+        state().busy = false;
+        state().watchdog_timer = None;
+        self.ui.label(cx, ids!(status_label))
+            .set_text(cx, "AI 响应超时(>70 秒),已复位 — 请再点一次");
+        self.ui.redraw(cx);
+    }
+
     fn ai_panel_handler(&mut self, cx: &mut Cx, panel: StudioPanel) {
         use octostudio_ai::TextClient;
         self.write_studio_title_to_state(cx);
+        // C15: arm the 70s watchdog before any potentially long API call
+        state().busy = true;
+        self.arm_watchdog(cx);
         let source = {
             let s = state();
             if s.current_source.is_empty() { s.current_content.clone() } else { s.current_source.clone() }
@@ -1182,6 +1221,9 @@ impl App {
                     .set_text(cx, &format!("✗ {} 失败: {}", panel.label(), e));
             }
         }
+        // C15: disarm the 70s watchdog
+        state().busy = false;
+        self.disarm_watchdog(cx);
         self.ui.redraw(cx);
     }
 
@@ -1231,6 +1273,9 @@ impl App {
                     .set_text(cx, &format!("✗ AI 创作失败: {e}"));
             }
         }
+        // C15: disarm
+        state().busy = false;
+        self.disarm_watchdog(cx);
         self.ui.redraw(cx);
     }
 
@@ -1684,6 +1729,10 @@ impl AppMain for App {
     }
 
     fn handle_event(&mut self, cx: &mut Cx, event: &Event) {
+        // C15: 70s watchdog timer fire handler
+        if let Event::Timer(te) = event {
+            self.handle_watchdog_timer_fire(cx, te.timer_id);
+        }
         self.match_event(cx, event);
         self.ui.handle_event(cx, event, &mut Scope::empty());
     }
@@ -2009,6 +2058,9 @@ impl App {
             format!("✓ 生成完成(demo,无 API key) — {} 条", items.len())
         };
         self.ui.label(cx, ids!(status_label)).set_text(cx, &msg);
+        // C15: disarm
+        state().busy = false;
+        self.disarm_watchdog(cx);
         self.goto(cx, Screen::Plan);
     }
 
@@ -2071,6 +2123,9 @@ impl App {
                     .set_text(cx, &format!("✗ 配图失败: {e}"));
             }
         }
+        // C15: disarm
+        state().busy = false;
+        self.disarm_watchdog(cx);
         self.ui.redraw(cx);
     }
 
