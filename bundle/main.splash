@@ -49,6 +49,7 @@ let glance_published = []
 let budget_text = ""
 let budget_last_ts = 0
 
+// ---------- 设计 token(原有 v0.4.x) ----------
 let ink = #x1c1c1e
 let secondary = #x8e8e93
 let accent = #xff6b35
@@ -56,6 +57,31 @@ let warm_hover = #xeadcd0
 let card_bg = #xfff5ec
 let chip_bg = #xf5e6dd
 let danger = #xb3541e
+
+// ---------- 设计 token(v0.5.0 新增) ----------
+let canvas       = #xF6F6F8   // 屏幕底色(从 #xfffaf5 改为更现代的浅灰)
+let surface      = #xFFFFFF   // 卡片表面,替代 #xffffff 字面量
+let hairline     = #xE5E5EA   // 分隔线
+let accent_hover = #xff8866   // 提为 token(原 #xff8866 字面量)
+let accent_soft  = #xffe9d6   // 选中/编辑高亮(原 #xffe9d6 字面量)
+let success      = #x2E7D5B
+let warning      = #xB46A16
+let info         = #x4A6FA5
+
+// 暗色 token(预留,v0.5.0 不渲染,只声明以备 v0.5.1)
+let dark_canvas    = #x0B0B0D
+let dark_surface   = #x17171A
+let dark_ink       = #xF5F5F7
+let dark_secondary = #x8E8E93
+
+// ---------- 字号 token(v0.5.0 收紧 scale) ----------
+let f_caption  = 11    // chip / 脚注(原来 9-10)
+let f_meta     = 12    // 元信息(原来 11)
+let f_body     = 14    // 正文(原来 12-13)
+let f_body_lg  = 16    // 强调正文(原来 14-15)
+let f_section  = 18    // 区段标题(原来 16)
+let f_title    = 22    // 屏幕大标题(原来 18-20)
+let f_hero     = 26    // hero / app 标题(原来 22-26)
 
 fn bump_seq(){
     seq += 1
@@ -86,6 +112,98 @@ fn arm_watchdog(){
 
 fn disarm_watchdog(){
     if gen_timer != nil { stop_timer(gen_timer) }
+}
+
+// ---------- UI helper(v0.5.0) ----------
+// Splash VM 的 fn 不能返回 widget dict,只能返回基础值,故 helper
+// 集中到三件事:颜色/字号选择、文本路由、CTA 颜色判断。
+// 所有调用点形如 draw_bg +: {color: bg_chip(active)}。
+
+fn bg_chip(active){           // 选中 chip 背景色
+    if active { return accent } else { return chip_bg }
+}
+fn bg_chip_hover(active){     // 选中 chip 悬停色
+    if active { return accent_hover } else { return warm_hover }
+}
+fn txt_chip(active){          // 选中 chip 文字色
+    if active { return surface } else { return ink }
+}
+fn bg_card(kind){             // kind: plain / warm / accent_soft
+    if kind == "warm" { return card_bg }
+    if kind == "accent_soft" { return accent_soft }
+    return surface
+}
+fn bg_input(){                // 输入框统一背景
+    return surface
+}
+fn bg_input_focus(){
+    return surface
+}
+fn empty_input_color(){
+    return #xf5e6d2
+}
+fn cta_bg(kind){              // kind: primary / secondary / danger / ghost
+    if kind == "primary" { return accent }
+    if kind == "danger" { return danger }
+    if kind == "secondary" { return chip_bg }
+    return canvas
+}
+fn cta_hover(kind){
+    if kind == "primary" { return accent_hover }
+    if kind == "danger" { return #xd66030 }
+    if kind == "secondary" { return warm_hover }
+    return #xefeeef
+}
+fn cta_text(kind){            // CTA 文字色
+    if kind == "primary" { return surface }
+    if kind == "danger" { return surface }
+    return ink
+}
+fn page_title(m){
+    if m == 0 { return "广场" }
+    if m == 1 { return "开始一段创作" }
+    if m == 2 { return "工坊" }
+    if m == 3 { return "计划" }
+    if m == 4 { return "导出" }
+    if m == 5 { return "设置" }
+    return "OctoStudio"
+}
+fn page_subtitle(m){
+    if m == 0 { return "今天共 " + works.len().to_string() + " 件作品" }
+    if m == 1 { return "挑一个场景,粘贴原文,一句话就够" }
+    if m == 2 { return current_title + " · " + kind_name(plan_kind) }
+    if m == 3 { return (if current_title != "" {current_title} else {"未命名作品"}) + " · " + current_plan_items.len().to_string() + " 条" }
+    if m == 4 { return current_title + " · " + plan_format }
+    if m == 5 { return "主题、字号、AI 默认" }
+    return ""
+}
+fn tab_emoji(i){
+    if i == 0 { return "◐" }
+    if i == 1 { return "✎" }
+    if i == 2 { return "◇" }
+    if i == 3 { return "▤" }
+    if i == 4 { return "⬆" }
+    return "·"
+}
+fn tab_label(i){
+    if i == 0 { return "广场" }
+    if i == 1 { return "录入" }
+    if i == 2 { return "工坊" }
+    if i == 3 { return "计划" }
+    if i == 4 { return "导出" }
+    return ""
+}
+fn kind_short(kind){          // 计划副标题用短标签
+    if kind == "image" { return "图文" }
+    if kind == "video" { return "视频" }
+    if kind == "ppt" { return "演示" }
+    if kind == "teardown" { return "拆解" }
+    if kind == "titles" { return "标题" }
+    if kind == "xhs" { return "小红书" }
+    if kind == "script" { return "口播" }
+    if kind == "mindmap" { return "导图" }
+    if kind == "quotes" { return "金句" }
+    return "文章"
 }
 
 fn sval(v){
@@ -2517,9 +2635,9 @@ start_timeout(0.05, || boot())
 root := SolidView{width: Fill height: Fill flow: Down padding: 16 spacing: 10 draw_bg.color: #xfffaf5
     View{width: Fill height: Fit flow: Right spacing: 8 align: Align{y: 0.5}
         Label{text: "OctoStudio" draw_text.color: ink draw_text.text_style: theme.font_bold{font_size: 26}}
-        status := Label{width: Fill text: status_text draw_text.color: secondary draw_text.text_style.font_size: 10}
+        status := Label{width: Fill text: status_text draw_text.color: secondary draw_text.text_style.font_size: 12}
     }
-    status_detail := Label{width: Fill text: status_detail draw_text.color: secondary draw_text.text_style.font_size: 9}
+    status_detail := Label{width: Fill text: status_detail draw_text.color: secondary draw_text.text_style.font_size: 12}
     tabs := View{width: Fill height: Fit flow: Right spacing: 6 on_render: || {
         let labels = ["广场" "录入" "工坊" "计划" "导出"]
         for i in 5 {
@@ -2534,7 +2652,7 @@ root := SolidView{width: Fill height: Fill flow: Down padding: 16 spacing: 10 dr
     content := View{width: Fill height: Fill flow: Overlay
 
         home_view := ScrollYView{width: Fill height: Fill flow: Down spacing: 8 visible: (mode == 0)
-            Label{width: Fill text: "创作广场" draw_text.color: ink draw_text.text_style: theme.font_bold{font_size: 18}}
+            Label{width: Fill text: "创作广场" draw_text.color: ink draw_text.text_style: theme.font_bold{font_size: 22}}
             View{width: Fill height: Fit flow: Right spacing: 6 align: Align{y: 0.5}
                 search_input := TextInput{width: Fill height: 32 empty_text: "搜索作品标题 / 原文关键词…"
                     draw_bg +: {color: #xffffff color_hover: #xffffff color_focus: #xffffff color_empty: #xf5e6d2 border_radius: 8.0}
@@ -2543,50 +2661,50 @@ root := SolidView{width: Fill height: Fill flow: Down padding: 16 spacing: 10 dr
                 ButtonFlat{text: "清除" height: 30 padding: Inset{left: 10 right: 10} on_click: || { set_search(""); ui.search_input.set_text("") }
                     draw_bg +: {color: chip_bg color_hover: warm_hover border_radius: 15.0 border_size: 0.0}
                     draw_text +: {color: ink color_hover: ink}
-                    draw_text.text_style.font_size: 10}
+                    draw_text.text_style.font_size: 12}
                 ButtonFlat{text: (if select_mode {"完成"} else {"多选"}) height: 30 padding: Inset{left: 10 right: 10} on_click: || toggle_select_mode()
                     draw_bg +: {color: (if select_mode {danger} else {chip_bg}) color_hover: warm_hover border_radius: 15.0 border_size: 0.0}
                     draw_text +: {color: (if select_mode {#xffffff} else {ink}) color_hover: ink}
-                    draw_text.text_style.font_size: 10}
+                    draw_text.text_style.font_size: 12}
             }
             sort_row := View{width: Fill height: Fit flow: Right spacing: 4
                 ButtonFlat{text: ("⇅ " + (if sort_mode == "updated_desc" {"最新"} else {"按时间"})) height: 24 padding: Inset{left: 8 right: 8}
                     on_click: || toggle_sort("updated_desc")
                     draw_bg +: {color: (if sort_mode == "updated_desc" {accent} else {chip_bg}) color_hover: warm_hover border_radius: 12.0 border_size: 0.0}
                     draw_text +: {color: (if sort_mode == "updated_desc" {#xffffff} else {ink}) color_hover: ink}
-                    draw_text.text_style.font_size: 9}
+                    draw_text.text_style.font_size: 12}
                 ButtonFlat{text: "⇅ 最早" height: 24 padding: Inset{left: 8 right: 8}
                     on_click: || toggle_sort("updated_asc")
                     draw_bg +: {color: (if sort_mode == "updated_asc" {accent} else {chip_bg}) color_hover: warm_hover border_radius: 12.0 border_size: 0.0}
                     draw_text +: {color: (if sort_mode == "updated_asc" {#xffffff} else {ink}) color_hover: ink}
-                    draw_text.text_style.font_size: 9}
+                    draw_text.text_style.font_size: 12}
                 ButtonFlat{text: "⇅ 按场景" height: 24 padding: Inset{left: 8 right: 8}
                     on_click: || toggle_sort("kind")
                     draw_bg +: {color: (if sort_mode == "kind" {accent} else {chip_bg}) color_hover: warm_hover border_radius: 12.0 border_size: 0.0}
                     draw_text +: {color: (if sort_mode == "kind" {#xffffff} else {ink}) color_hover: ink}
-                    draw_text.text_style.font_size: 9}
+                    draw_text.text_style.font_size: 12}
             }
             select_bar := View{width: Fill height: Fit flow: Right spacing: 6 align: Align{y: 0.5}
-                Label{width: Fill text: ("已选 " + selected_ids.len().to_string() + " 项") draw_text.color: accent draw_text.text_style.font_size: 11 visible: select_mode}
+                Label{width: Fill text: ("已选 " + selected_ids.len().to_string() + " 项") draw_text.color: accent draw_text.text_style.font_size: 12 visible: select_mode}
                 ButtonFlat{text: "全选可见" height: 26 padding: Inset{left: 8 right: 8} on_click: || select_all_visible() visible: select_mode
                     draw_bg +: {color: chip_bg color_hover: warm_hover border_radius: 13.0 border_size: 0.0}
                     draw_text +: {color: ink color_hover: ink}
-                    draw_text.text_style.font_size: 9}
+                    draw_text.text_style.font_size: 12}
                 ButtonFlat{text: "清除选择" height: 26 padding: Inset{left: 8 right: 8} on_click: || clear_selection() visible: select_mode
                     draw_bg +: {color: chip_bg color_hover: warm_hover border_radius: 13.0 border_size: 0.0}
                     draw_text +: {color: ink color_hover: ink}
-                    draw_text.text_style.font_size: 9}
+                    draw_text.text_style.font_size: 12}
                 ButtonFlat{text: ("删除 " + selected_ids.len().to_string() + " 项") height: 26 padding: Inset{left: 10 right: 10} on_click: || batch_delete_selected() visible: (select_mode && selected_ids.len() > 0)
                     draw_bg +: {color: danger color_hover: #xd66030 border_radius: 13.0 border_size: 0.0}
                     draw_text +: {color: #xffffff color_hover: #xffffff}
-                    draw_text.text_style.font_size: 9}
+                    draw_text.text_style.font_size: 12}
             }
             works_list := View{width: Fill height: Fit flow: Down spacing: 8 on_render: || {
                 let visible = sorted_works()
                 if visible.len() == 0 {
                     View{width: Fill height: 90 align: Align{x: 0.5 y: 0.5}
                         Label{text: (if works.len() == 0 {"还没有作品"} else {"没有匹配的作品"}) draw_text.color: ink draw_text.text_style.font_size: 14}
-                        Label{text: (if works.len() == 0 {"点下面的场景卡片开始一段创作。"} else {"清除搜索 / 标签筛选看全部。"}) draw_text.color: secondary draw_text.text_style.font_size: 11}
+                        Label{text: (if works.len() == 0 {"点下面的场景卡片开始一段创作。"} else {"清除搜索 / 标签筛选看全部。"}) draw_text.color: secondary draw_text.text_style.font_size: 12}
                     }
                 }
                 for i in 24 {
@@ -2602,10 +2720,10 @@ root := SolidView{width: Fill height: Fill flow: Down padding: 16 spacing: 10 dr
                         draw_bg +: {color: (if is_selected(w["id"]) {#xffe9d6} {#xffffff}) color_hover: card_bg border_radius: 10.0 border_size: (if is_selected(w["id"]) {2.0} {0.0})}
                         on_tap: |x, y| open_work(w["id"])
                         View{width: Fill height: Fit flow: Right spacing: 8 align: Align{y: 0.5}
-                            Label{width: Fill text: (if select_mode { (if is_selected(w["id"]) {"☑ "} else {"☐ "}) + title_v } else {title_v}) draw_text.color: ink draw_text.text_style.font_size: 15}
-                            Label{text: kind_emoji(kind_v) draw_text.color: secondary draw_text.text_style.font_size: 14}
+                            Label{width: Fill text: (if select_mode { (if is_selected(w["id"]) {"☑ "} else {"☐ "}) + title_v } else {title_v}) draw_text.color: ink draw_text.text_style.font_size: 16}
+                            Label{text: kind_emoji(kind_v) draw_text.color: secondary draw_text.text_style.font_size: 18}
                         }
-                        Label{width: Fill text: (sub + " · 更新于 " + rel_time(stamp_v)) draw_text.color: secondary draw_text.text_style.font_size: 10}
+                        Label{width: Fill text: (sub + " · 更新于 " + rel_time(stamp_v)) draw_text.color: secondary draw_text.text_style.font_size: 12}
                         let hist_v = (if w["history"] != nil {w["history"]} else {[]})
                         let hist_open = (history_open_id == w["id"])
                         let has_hist = (hist_v.len() > 0)
@@ -2637,9 +2755,9 @@ root := SolidView{width: Fill height: Fill flow: Down padding: 16 spacing: 10 dr
                     on_click: || toggle_tag("")
                     draw_bg +: {color: (if active_tag == "" {accent} else {chip_bg}) color_hover: (if active_tag == "" {#xff8866} else {warm_hover}) border_radius: 12.0 border_size: 0.0}
                     draw_text +: {color: (if active_tag == "" {#xffffff} else {secondary}) color_hover: (if active_tag == "" {#xffffff} else {ink})}
-                    draw_text.text_style.font_size: 9}
+                    draw_text.text_style.font_size: 12}
                 if known_tags.len() == 0 {
-                    Label{text: "(尚无标签,完成作品后自动出现)" draw_text.color: secondary draw_text.text_style.font_size: 9}
+                    Label{text: "(尚无标签,完成作品后自动出现)" draw_text.color: secondary draw_text.text_style.font_size: 12}
                 }
                 for k in 16 {
                     if k < known_tags.len() {
@@ -2649,17 +2767,17 @@ root := SolidView{width: Fill height: Fill flow: Down padding: 16 spacing: 10 dr
                             on_click: || toggle_tag(tg)
                             draw_bg +: {color: (if active_tag == tg {accent} else {chip_bg}) color_hover: (if active_tag == tg {#xff8866} else {warm_hover}) border_radius: 12.0 border_size: 0.0}
                             draw_text +: {color: (if active_tag == tg {#xffffff} else {secondary}) color_hover: (if active_tag == tg {#xffffff} else {ink})}
-                            draw_text.text_style.font_size: 9}
+                            draw_text.text_style.font_size: 12}
                     }
                 }
             }}
-            Label{width: Fill text: "开始一段创作(点场景卡片)" draw_text.color: ink draw_text.text_style: theme.font_bold{font_size: 13}}
+            Label{width: Fill text: "开始一段创作(点场景卡片)" draw_text.color: ink draw_text.text_style: theme.font_bold{font_size: 18}}
             View{width: Fill height: Fit flow: Right spacing: 6 align: Align{y: 0.5}
                 Label{width: Fill text: "灵感外发:把当前作品发到 glance 屏" draw_text.color: secondary}
                 ButtonFlat{text: "发布到 glance" height: 28 padding: Inset{left: 10 right: 10} on_click: || glance_publish_current()
                     draw_bg +: {color: chip_bg color_hover: warm_hover border_radius: 14.0 border_size: 0.0}
                     draw_text +: {color: ink color_hover: ink}
-                    draw_text.text_style.font_size: 10}
+                    draw_text.text_style.font_size: 12}
             }
             View{width: Fill height: Fit flow: Right spacing: 6
                 for i in 5 {
@@ -2667,8 +2785,8 @@ root := SolidView{width: Fill height: Fill flow: Down padding: 16 spacing: 10 dr
                     GestureView{width: 71 height: Fit flow: Down spacing: 2 padding: Inset{top: 6 bottom: 6 left: 6 right: 6}
                         draw_bg +: {color: #xffffff color_hover: card_bg border_radius: 10.0 border_size: 0.0}
                         on_tap: || start_scenario(sc["id"])
-                        Label{width: Fill text: sc["emoji"] draw_text.text_style.font_size: 16}
-                        Label{width: Fill text: sc["name"] draw_text.color: ink draw_text.text_style.font_size: 9}
+                        Label{width: Fill text: sc["emoji"] draw_text.text_style.font_size: 18}
+                        Label{width: Fill text: sc["name"] draw_text.color: ink draw_text.text_style.font_size: 12}
                     }
                 }
             }
@@ -2679,15 +2797,15 @@ root := SolidView{width: Fill height: Fill flow: Down padding: 16 spacing: 10 dr
                     GestureView{width: 71 height: Fit flow: Down spacing: 2 padding: Inset{top: 6 bottom: 6 left: 6 right: 6}
                         draw_bg +: {color: #xffffff color_hover: card_bg border_radius: 10.0 border_size: 0.0}
                         on_tap: || start_scenario(sc["id"])
-                        Label{width: Fill text: sc["emoji"] draw_text.text_style.font_size: 16}
-                        Label{width: Fill text: sc["name"] draw_text.color: ink draw_text.text_style.font_size: 9}
+                        Label{width: Fill text: sc["emoji"] draw_text.text_style.font_size: 18}
+                        Label{width: Fill text: sc["name"] draw_text.color: ink draw_text.text_style.font_size: 12}
                     }
                 }
             }
         }
 
         compose_view := View{width: Fill height: Fill flow: Down spacing: 10 visible: (mode == 1)
-            Label{text: "录入" draw_text.color: ink draw_text.text_style: theme.font_bold{font_size: 20}}
+            Label{text: "录入" draw_text.color: ink draw_text.text_style: theme.font_bold{font_size: 22}}
             compose_scroll := ScrollYView{width: Fill height: Fill flow: Down spacing: 10
             scenario_row1 := View{width: Fill height: Fit flow: Right spacing: 6 on_render: || {
                 for i in 5 {
@@ -2696,7 +2814,7 @@ root := SolidView{width: Fill height: Fill flow: Down padding: 16 spacing: 10 dr
                         on_click: || switch_scenario(sc["id"])
                         draw_bg +: {color: (if plan_kind == sc["id"] {accent} else {chip_bg}) color_hover: (if plan_kind == sc["id"] {#xff8866} else {warm_hover}) border_radius: 14.0 border_size: 0.0}
                         draw_text +: {color: (if plan_kind == sc["id"] {#xffffff} else {ink}) color_hover: (if plan_kind == sc["id"] {#xffffff} else {ink}) }
-                        draw_text.text_style.font_size: 10}
+                        draw_text.text_style.font_size: 12}
                 }
             }}
             scenario_row2 := View{width: Fill height: Fit flow: Right spacing: 6 on_render: || {
@@ -2707,11 +2825,11 @@ root := SolidView{width: Fill height: Fill flow: Down padding: 16 spacing: 10 dr
                         on_click: || switch_scenario(sc["id"])
                         draw_bg +: {color: (if plan_kind == sc["id"] {accent} else {chip_bg}) color_hover: (if plan_kind == sc["id"] {#xff8866} else {warm_hover}) border_radius: 14.0 border_size: 0.0}
                         draw_text +: {color: (if plan_kind == sc["id"] {#xffffff} else {ink}) color_hover: (if plan_kind == sc["id"] {#xffffff} else {ink}) }
-                        draw_text.text_style.font_size: 10}
+                        draw_text.text_style.font_size: 12}
                 }
             }}
             theme_row := View{width: Fill height: Fit flow: Down spacing: 4
-                Label{width: Fill text: "文章主题样式" draw_text.color: secondary draw_text.text_style.font_size: 10}
+                Label{width: Fill text: "文章主题样式" draw_text.color: secondary draw_text.text_style.font_size: 12}
                 theme_row1 := View{width: Fill height: Fit flow: Right spacing: 4 on_render: || {
                     for i in 5 {
                         let th = THEMES[i]
@@ -2719,7 +2837,7 @@ root := SolidView{width: Fill height: Fill flow: Down padding: 16 spacing: 10 dr
                             on_click: || { current_theme = th["id"]; ui.theme_row1.render(); ui.theme_row2.render() }
                             draw_bg +: {color: (if current_theme == th["id"] {accent} else {chip_bg}) color_hover: (if current_theme == th["id"] {#xff8866} else {warm_hover}) border_radius: 12.0 border_size: 0.0}
                             draw_text +: {color: (if current_theme == th["id"] {#xffffff} else {secondary}) color_hover: (if current_theme == th["id"] {#xffffff} else {ink}) }
-                            draw_text.text_style.font_size: 9}
+                            draw_text.text_style.font_size: 12}
                     }
                 }}
                 theme_row2 := View{width: Fill height: Fit flow: Right spacing: 4 on_render: || {
@@ -2730,36 +2848,36 @@ root := SolidView{width: Fill height: Fill flow: Down padding: 16 spacing: 10 dr
                             on_click: || { current_theme = th["id"]; ui.theme_row1.render(); ui.theme_row2.render() }
                             draw_bg +: {color: (if current_theme == th["id"] {accent} else {chip_bg}) color_hover: (if current_theme == th["id"] {#xff8866} else {warm_hover}) border_radius: 12.0 border_size: 0.0}
                             draw_text +: {color: (if current_theme == th["id"] {#xffffff} else {secondary}) color_hover: (if current_theme == th["id"] {#xffffff} else {ink}) }
-                            draw_text.text_style.font_size: 9}
+                            draw_text.text_style.font_size: 12}
                     }
                 }}
             }
             preset_row := View{width: Fill height: Fit flow: Down spacing: 4
-                Label{width: Fill text: "视频风格预设" draw_text.color: secondary draw_text.text_style.font_size: 10}
+                Label{width: Fill text: "视频风格预设" draw_text.color: secondary draw_text.text_style.font_size: 12}
                 preset_chips := View{width: Fill height: Fit flow: Right spacing: 4 on_render: || {
                     for p in PRESETS {
                         ButtonFlat{text: p["name"] height: 26 padding: Inset{left: 8 right: 8}
                             on_click: || { current_preset = p["id"]; ui.preset_chips.render() }
                             draw_bg +: {color: (if current_preset == p["id"] {accent} else {chip_bg}) color_hover: (if current_preset == p["id"] {#xff8866} else {warm_hover}) border_radius: 13.0 border_size: 0.0}
                             draw_text +: {color: (if current_preset == p["id"] {#xffffff} else {secondary}) color_hover: (if current_preset == p["id"] {#xffffff} else {ink}) }
-                            draw_text.text_style.font_size: 10}
+                            draw_text.text_style.font_size: 12}
                     }
                 }}
             }
-            compose_hint := Label{width: Fill text: "" draw_text.color: secondary draw_text.text_style.font_size: 11}
-            reference_label := Label{width: Fill text: "参考图 URL(可选)" draw_text.color: secondary draw_text.text_style.font_size: 10}
+            compose_hint := Label{width: Fill text: "" draw_text.color: secondary draw_text.text_style.font_size: 12}
+            reference_label := Label{width: Fill text: "参考图 URL(可选)" draw_text.color: secondary draw_text.text_style.font_size: 12}
             reference_input := TextInput{width: Fill height: 36 empty_text: "https://example.com/cover.jpg"
                 draw_bg +: {color: #xffffff color_hover: #xffffff color_focus: #xffffff color_empty: #xf5e6d2 border_radius: 8.0}
                 draw_text +: {color: ink color_hover: ink color_focus: ink color_empty: secondary color_empty_hover: secondary}}
-            prompt_label := Label{width: Fill text: "一句话意图" draw_text.color: secondary draw_text.text_style.font_size: 10}
+            prompt_label := Label{width: Fill text: "一句话意图" draw_text.color: secondary draw_text.text_style.font_size: 12}
             prompt_input := TextInput{width: Fill height: 80 empty_text: "一句话意图(如:夏日海边慢生活,温暖散文风)"
                 draw_bg +: {color: #xffffff color_hover: #xffffff color_focus: #xffffff color_empty: #xf5e6d2 border_radius: 8.0}
                 draw_text +: {color: ink color_hover: ink color_focus: ink color_empty: secondary color_empty_hover: secondary}}
-            source_label := Label{width: Fill text: "文字稿 / 原文" draw_text.color: secondary draw_text.text_style.font_size: 10}
+            source_label := Label{width: Fill text: "文字稿 / 原文" draw_text.color: secondary draw_text.text_style.font_size: 12}
             source_input := TextInput{width: Fill height: 180 empty_text: "粘贴视频文字稿 / 原文 / 详细描述…"
                 draw_bg +: {color: #xffffff color_hover: #xffffff color_focus: #xffffff color_empty: #xf5e6d2 border_radius: 8.0}
                 draw_text +: {color: ink color_hover: ink color_focus: ink color_empty: secondary color_empty_hover: secondary}}
-            model_label := Label{width: Fill text: "" draw_text.color: secondary draw_text.text_style.font_size: 11}
+            model_label := Label{width: Fill text: "" draw_text.color: secondary draw_text.text_style.font_size: 12}
             }
             View{width: Fill height: Fit flow: Right spacing: 8 align: Align{y: 0.5}
                 ButtonFlat{text: "返回广场" height: 40 padding: Inset{left: 18 right: 18} on_click: || goto(0)
@@ -2775,7 +2893,7 @@ root := SolidView{width: Fill height: Fill flow: Down padding: 16 spacing: 10 dr
         }
 
         studio_view := ScrollYView{width: Fill height: Fill flow: Down spacing: 8 visible: (mode == 2)
-            Label{text: "创作工坊" draw_text.color: ink draw_text.text_style: theme.font_bold{font_size: 20}}
+            Label{text: "创作工坊" draw_text.color: ink draw_text.text_style: theme.font_bold{font_size: 22}}
             studio_scroll := ScrollYView{width: Fill height: Fill flow: Down spacing: 8
             ScrollXView{width: Fill height: Fit flow: Right spacing: 6
                 for i in 8 {
@@ -2797,61 +2915,61 @@ root := SolidView{width: Fill height: Fill flow: Down padding: 16 spacing: 10 dr
                 ButtonFlat{text: ("撤销(" + undo_stack.len().to_string() + ")") height: 32 padding: Inset{left: 12 right: 12} on_click: || pop_undo() visible: (undo_stack.len() > 0)
                     draw_bg +: {color: chip_bg color_hover: warm_hover border_radius: 16.0 border_size: 0.0}
                     draw_text +: {color: ink color_hover: ink}
-                    draw_text.text_style.font_size: 10}
+                    draw_text.text_style.font_size: 12}
                 ButtonFlat{text: "快照原文" height: 32 padding: Inset{left: 12 right: 12} on_click: || { push_undo("source"); status_text = "已快照原文,可保存后撤销"; ui.status.set_text(status_text) }
                     draw_bg +: {color: chip_bg color_hover: warm_hover border_radius: 16.0 border_size: 0.0}
                     draw_text +: {color: secondary color_hover: ink}
-                    draw_text.text_style.font_size: 10}
+                    draw_text.text_style.font_size: 12}
             }
             title_input := TextInput{width: Fill height: 38 empty_text: current_title
                 draw_bg +: {color: #xffffff color_hover: #xffffff color_focus: #xffffff color_empty: #xf5e6d2 border_radius: 8.0}
                 draw_text +: {color: ink color_hover: ink color_focus: ink color_empty: secondary color_empty_hover: secondary}}
-            reference_label := Label{text: "参考图" draw_text.color: secondary draw_text.text_style.font_size: 11}
+            reference_label := Label{text: "参考图" draw_text.color: secondary draw_text.text_style.font_size: 12}
             reference_image := Image{width: Fill height: 140 fit: ImageFit.CropToFill visible: false}
-            reference_caption := Label{width: Fill text: "" draw_text.color: secondary draw_text.text_style.font_size: 11}
-            Label{text: "原文" draw_text.color: secondary draw_text.text_style.font_size: 11}
+            reference_caption := Label{width: Fill text: "" draw_text.color: secondary draw_text.text_style.font_size: 12}
+            Label{text: "原文" draw_text.color: secondary draw_text.text_style.font_size: 12}
             ScrollYView{width: Fill height: 90 flow: Down padding: Inset{left: 10 right: 10 top: 8 bottom: 8}
                 draw_bg.color: card_bg draw_bg.border_radius: 8.0
-                source_preview := Label{width: Fill text: current_source draw_text.color: ink draw_text.text_style.font_size: 13}}
-            Label{text: "成稿(可手动修改)" draw_text.color: secondary draw_text.text_style.font_size: 11}
+                source_preview := Label{width: Fill text: current_source draw_text.color: ink draw_text.text_style.font_size: 14}}
+            Label{text: "成稿(可手动修改)" draw_text.color: secondary draw_text.text_style.font_size: 12}
             content_input := TextInput{width: Fill height: 240 empty_text: "点 AI 创作或直接在此写"
                 draw_bg +: {color: #xffffff color_hover: #xffffff color_focus: #xffffff color_empty: #xf5e6d2 border_radius: 8.0}
                 draw_text +: {color: ink color_hover: ink color_focus: ink color_empty: secondary color_empty_hover: secondary}}
-            Label{width: Fill text: ("字数: 原文 " + word_count(current_source).to_string() + " · 成稿 " + word_count(current_content).to_string()) draw_text.color: secondary draw_text.text_style.font_size: 11}
+            Label{width: Fill text: ("字数: 原文 " + word_count(current_source).to_string() + " · 成稿 " + word_count(current_content).to_string()) draw_text.color: secondary draw_text.text_style.font_size: 12}
             View{width: Fill height: Fit flow: Down spacing: 4 padding: Inset{top: 8 bottom: 8 left: 12 right: 12}
                 draw_bg.color: card_bg draw_bg.border_radius: 8.0
-                Label{width: Fill text: "AI 助手(model 7 项)" draw_text.color: ink draw_text.text_style.font_size: 11}
+                Label{width: Fill text: "AI 助手(model 7 项)" draw_text.color: ink draw_text.text_style.font_size: 14}
                 View{width: Fill height: Fit flow: Right spacing: 4
                     ButtonFlat{text: "起标题" height: 26 padding: Inset{left: 8 right: 8} on_click: || ai_gen_title() visible: (!busy)
                         draw_bg +: {color: chip_bg color_hover: warm_hover border_radius: 13.0 border_size: 0.0}
                         draw_text +: {color: ink color_hover: ink}
-                        draw_text.text_style.font_size: 9}
+                        draw_text.text_style.font_size: 12}
                     ButtonFlat{text: "关键词" height: 26 padding: Inset{left: 8 right: 8} on_click: || ai_extract_keywords() visible: (!busy)
                         draw_bg +: {color: chip_bg color_hover: warm_hover border_radius: 13.0 border_size: 0.0}
                         draw_text +: {color: ink color_hover: ink}
-                        draw_text.text_style.font_size: 9}
+                        draw_text.text_style.font_size: 12}
                     ButtonFlat{text: "摘要" height: 26 padding: Inset{left: 8 right: 8} on_click: || ai_summarize() visible: (!busy)
                         draw_bg +: {color: chip_bg color_hover: warm_hover border_radius: 13.0 border_size: 0.0}
                         draw_text +: {color: ink color_hover: ink}
-                        draw_text.text_style.font_size: 9}
+                        draw_text.text_style.font_size: 12}
                     ButtonFlat{text: "风格迁移" height: 26 padding: Inset{left: 8 right: 8} on_click: || ai_style_variants() visible: (!busy)
                         draw_bg +: {color: chip_bg color_hover: warm_hover border_radius: 13.0 border_size: 0.0}
                         draw_text +: {color: ink color_hover: ink}
-                        draw_text.text_style.font_size: 9}
+                        draw_text.text_style.font_size: 12}
                     ButtonFlat{text: "中英对照" height: 26 padding: Inset{left: 8 right: 8} on_click: || ai_translate_zh_en() visible: (!busy)
                         draw_bg +: {color: chip_bg color_hover: warm_hover border_radius: 13.0 border_size: 0.0}
                         draw_text +: {color: ink color_hover: ink}
-                        draw_text.text_style.font_size: 9}
+                        draw_text.text_style.font_size: 12}
                     ButtonFlat{text: "标题打分" height: 26 padding: Inset{left: 8 right: 8} on_click: || ai_score_title() visible: (!busy)
                         draw_bg +: {color: chip_bg color_hover: warm_hover border_radius: 13.0 border_size: 0.0}
                         draw_text +: {color: ink color_hover: ink}
-                        draw_text.text_style.font_size: 9}
+                        draw_text.text_style.font_size: 12}
                     ButtonFlat{text: "模型预算" height: 26 padding: Inset{left: 8 right: 8} on_click: || ai_budget() visible: (!busy)
                         draw_bg +: {color: chip_bg color_hover: warm_hover border_radius: 13.0 border_size: 0.0}
                         draw_text +: {color: ink color_hover: ink}
-                        draw_text.text_style.font_size: 9}
+                        draw_text.text_style.font_size: 12}
                 }
-                ai_result_label := Label{width: Fill text: ai_panel_result draw_text.color: ink draw_text.text_style.font_size: 11}
+                ai_result_label := Label{width: Fill text: ai_panel_result draw_text.color: ink draw_text.text_style.font_size: 12}
             }
             }
             View{width: Fill height: Fit flow: Right spacing: 8 align: Align{y: 0.5}
@@ -2866,29 +2984,29 @@ root := SolidView{width: Fill height: Fill flow: Down padding: 16 spacing: 10 dr
 
         plan_view := ScrollYView{width: Fill height: Fill flow: Down spacing: 8 visible: (mode == 3)
             View{width: Fill height: Fit flow: Right spacing: 8 align: Align{y: 0.5}
-                plan_kind_label := Label{width: Fill text: "" draw_text.color: ink draw_text.text_style: theme.font_bold{font_size: 18}}
+                plan_kind_label := Label{width: Fill text: "" draw_text.color: ink draw_text.text_style: theme.font_bold{font_size: 22}}
                 images_btn := ButtonFlat{text: "配图:开" height: 28 padding: Inset{left: 10 right: 10} on_click: || toggle_images()
                     draw_bg +: {color: chip_bg color_hover: warm_hover border_radius: 14.0 border_size: 0.0}
                     draw_text +: {color: secondary color_hover: ink }
-                    draw_text.text_style.font_size: 10}
+                    draw_text.text_style.font_size: 12}
             }
             plan_title_input := TextInput{width: Fill height: 38 empty_text: "标题"
                 draw_bg +: {color: #xffffff color_hover: #xffffff color_focus: #xffffff color_empty: #xf5e6d2 border_radius: 8.0}
                 draw_text +: {color: ink color_hover: ink color_focus: ink color_empty: secondary color_empty_hover: secondary}}
-            plan_hint := Label{width: Fill text: "" draw_text.color: secondary draw_text.text_style.font_size: 11}
-            plan_content_label := Label{width: Fill text: "笔记正文(可编辑)" draw_text.color: secondary draw_text.text_style.font_size: 10}
+            plan_hint := Label{width: Fill text: "" draw_text.color: secondary draw_text.text_style.font_size: 12}
+            plan_content_label := Label{width: Fill text: "笔记正文(可编辑)" draw_text.color: secondary draw_text.text_style.font_size: 12}
             plan_content_input := TextInput{width: Fill height: 120 empty_text: "笔记正文"
                 draw_bg +: {color: #xffffff color_hover: #xffffff color_focus: #xffffff color_empty: #xf5e6d2 border_radius: 8.0}
                 draw_text +: {color: ink color_hover: ink color_focus: ink color_empty: secondary color_empty_hover: secondary}}
             comp_card := RoundedView{width: Fill height: Fit flow: Down padding: Inset{top: 10 bottom: 10 left: 12 right: 12} spacing: 4 visible: false
                 draw_bg.color: card_bg draw_bg.border_radius: 8.0
-                comp_head := Label{width: Fill text: "" draw_text.color: ink draw_text.text_style: theme.font_bold{font_size: 13}}
+                comp_head := Label{width: Fill text: "" draw_text.color: ink draw_text.text_style: theme.font_bold{font_size: 14}}
                 comp_body := Label{width: Fill text: "" draw_text.color: ink draw_text.text_style.font_size: 12}
             }
             plan_list := View{width: Fill height: Fit flow: Down spacing: 10
                 plan_inner := View{width: Fill height: Fit flow: Down spacing: 10 on_render: || {
                 if current_plan_items.len() == 0 {
-                    Label{text: "尚无内容 — 点下方「新增一条」,或回录入页生成" draw_text.color: secondary draw_text.text_style.font_size: 12}
+                    Label{text: "尚无内容 — 点下方「新增一条」,或回录入页生成" draw_text.color: secondary draw_text.text_style.font_size: 14}
                 }
                 for i in 16 {
                     if i < current_plan_items.len() {
@@ -2897,29 +3015,29 @@ root := SolidView{width: Fill height: Fill flow: Down padding: 16 spacing: 10 dr
                     RoundedView{width: Fill height: Fit flow: Down padding: Inset{top: 10 bottom: 10 left: 12 right: 12} spacing: 6
                         draw_bg.color: card_bg draw_bg.border_radius: 8.0
                         View{width: Fill height: Fit flow: Right spacing: 6 align: Align{y: 0.5}
-                            Label{width: Fill text: ("第 " + idx.to_string() + " 条") draw_text.color: secondary draw_text.text_style.font_size: 10}
+                            Label{width: Fill text: ("第 " + idx.to_string() + " 条") draw_text.color: secondary draw_text.text_style.font_size: 12}
                             ButtonFlat{text: "编辑" height: 24 padding: Inset{left: 8 right: 8} on_click: || start_edit_item(it)
                                 draw_bg +: {color: chip_bg color_hover: warm_hover border_radius: 12.0 border_size: 0.0}
                                 draw_text +: {color: ink color_hover: ink }
-                                draw_text.text_style.font_size: 9}
+                                draw_text.text_style.font_size: 12}
                             ButtonFlat{text: "上移" height: 24 padding: Inset{left: 8 right: 8} on_click: || item_move_up(it)
                                 draw_bg +: {color: chip_bg color_hover: warm_hover border_radius: 12.0 border_size: 0.0}
                                 draw_text +: {color: secondary color_hover: ink }
-                                draw_text.text_style.font_size: 9}
+                                draw_text.text_style.font_size: 12}
                             ButtonFlat{text: "下移" height: 24 padding: Inset{left: 8 right: 8} on_click: || item_move_down(it)
                                 draw_bg +: {color: chip_bg color_hover: warm_hover border_radius: 12.0 border_size: 0.0}
                                 draw_text +: {color: secondary color_hover: ink }
-                                draw_text.text_style.font_size: 9}
+                                draw_text.text_style.font_size: 12}
                             ButtonFlat{text: "删除" height: 24 padding: Inset{left: 8 right: 8} on_click: || item_delete_item(it)
                                 draw_bg +: {color: chip_bg color_hover: warm_hover border_radius: 12.0 border_size: 0.0}
                                 draw_text +: {color: danger color_hover: danger }
-                                draw_text.text_style.font_size: 9}
+                                draw_text.text_style.font_size: 12}
                         }
                         if editing_k == it["_k"] {
                             RoundedView{width: Fill height: Fit flow: Down spacing: 4 padding: Inset{top: 8 bottom: 8 left: 10 right: 10}
                                 draw_bg.color: #xffe9d6 draw_bg.border_radius: 6.0
                                 View{width: Fill height: Fit flow: Right spacing: 6 align: Align{y: 0.5}
-                                    Label{width: Fill text: "编辑此条(留空 = 不修改)" draw_text.color: ink draw_text.text_style: theme.font_bold{font_size: 11}}
+                                    Label{width: Fill text: "编辑此条(留空 = 不修改)" draw_text.color: ink draw_text.text_style: theme.font_bold{font_size: 14}}
                                     ButtonFlat{text: "写入" height: 26 padding: Inset{left: 10 right: 10} on_click: || apply_edit()
                                         draw_bg +: {color: accent color_hover: #xff8866 border_radius: 13.0 border_size: 0.0}
                                         draw_text +: {color: #xffffff color_hover: #xffffff}}
@@ -2931,42 +3049,42 @@ root := SolidView{width: Fill height: Fill flow: Down padding: 16 spacing: 10 dr
                                 let en = efields.len()
                                 if en > 0 {
                                     let ef = efields[0]
-                                    Label{width: Fill text: (ef["label"] + "(原: " + sval(it[ef["key"]]) + ")") draw_text.color: secondary draw_text.text_style.font_size: 9}
+                                    Label{width: Fill text: (ef["label"] + "(原: " + sval(it[ef["key"]]) + ")") draw_text.color: secondary draw_text.text_style.font_size: 11}
                                     edit1_input := TextInput{width: Fill height: 32 empty_text: "留空则不修改"
                                         draw_bg +: {color: #xffffff color_hover: #xffffff color_focus: #xffffff border_radius: 5.0}
                                         draw_text +: {color: ink color_hover: ink color_focus: ink}}
                                 }
                                 if en > 1 {
                                     let ef = efields[1]
-                                    Label{width: Fill text: (ef["label"] + "(原: " + sval(it[ef["key"]]) + ")") draw_text.color: secondary draw_text.text_style.font_size: 9}
+                                    Label{width: Fill text: (ef["label"] + "(原: " + sval(it[ef["key"]]) + ")") draw_text.color: secondary draw_text.text_style.font_size: 11}
                                     edit2_input := TextInput{width: Fill height: 32 empty_text: "留空则不修改"
                                         draw_bg +: {color: #xffffff color_hover: #xffffff color_focus: #xffffff border_radius: 5.0}
                                         draw_text +: {color: ink color_hover: ink color_focus: ink}}
                                 }
                                 if en > 2 {
                                     let ef = efields[2]
-                                    Label{width: Fill text: (ef["label"] + "(原: " + sval(it[ef["key"]]) + ")") draw_text.color: secondary draw_text.text_style.font_size: 9}
+                                    Label{width: Fill text: (ef["label"] + "(原: " + sval(it[ef["key"]]) + ")") draw_text.color: secondary draw_text.text_style.font_size: 11}
                                     edit3_input := TextInput{width: Fill height: 32 empty_text: "留空则不修改"
                                         draw_bg +: {color: #xffffff color_hover: #xffffff color_focus: #xffffff border_radius: 5.0}
                                         draw_text +: {color: ink color_hover: ink color_focus: ink}}
                                 }
                                 if en > 3 {
                                     let ef = efields[3]
-                                    Label{width: Fill text: (ef["label"] + "(原: " + sval(it[ef["key"]]) + ")") draw_text.color: secondary draw_text.text_style.font_size: 9}
+                                    Label{width: Fill text: (ef["label"] + "(原: " + sval(it[ef["key"]]) + ")") draw_text.color: secondary draw_text.text_style.font_size: 11}
                                     edit4_input := TextInput{width: Fill height: 32 empty_text: "留空则不修改"
                                         draw_bg +: {color: #xffffff color_hover: #xffffff color_focus: #xffffff border_radius: 5.0}
                                         draw_text +: {color: ink color_hover: ink color_focus: ink}}
                                 }
                                 if en > 4 {
                                     let ef = efields[4]
-                                    Label{width: Fill text: (ef["label"] + "(原: " + sval(it[ef["key"]]) + ")") draw_text.color: secondary draw_text.text_style.font_size: 9}
+                                    Label{width: Fill text: (ef["label"] + "(原: " + sval(it[ef["key"]]) + ")") draw_text.color: secondary draw_text.text_style.font_size: 11}
                                     edit5_input := TextInput{width: Fill height: 32 empty_text: "留空则不修改"
                                         draw_bg +: {color: #xffffff color_hover: #xffffff color_focus: #xffffff border_radius: 5.0}
                                         draw_text +: {color: ink color_hover: ink color_focus: ink}}
                                 }
                                 if en > 5 {
                                     let ef = efields[5]
-                                    Label{width: Fill text: (ef["label"] + "(原: " + sval(it[ef["key"]]) + ")") draw_text.color: secondary draw_text.text_style.font_size: 9}
+                                    Label{width: Fill text: (ef["label"] + "(原: " + sval(it[ef["key"]]) + ")") draw_text.color: secondary draw_text.text_style.font_size: 11}
                                     edit6_input := TextInput{width: Fill height: 32 empty_text: "留空则不修改"
                                         draw_bg +: {color: #xffffff color_hover: #xffffff color_focus: #xffffff border_radius: 5.0}
                                         draw_text +: {color: ink color_hover: ink color_focus: ink}}
@@ -2975,16 +3093,16 @@ root := SolidView{width: Fill height: Fill flow: Down padding: 16 spacing: 10 dr
                         }
                         let fields = item_fields(plan_kind)
                         for f in fields {
-                            Label{width: Fill text: (f["label"] + ": " + sval(it[f["key"]])) draw_text.color: ink draw_text.text_style.font_size: 11}
+                            Label{width: Fill text: (f["label"] + ": " + sval(it[f["key"]])) draw_text.color: ink draw_text.text_style.font_size: 14}
                         }
                         let ip_prompt = img_prompt_of(plan_kind, it)
                         if ip_prompt != "" {
                             if images_on {
-                                Label{width: Fill text: "AI 配图(可选增强 · 离线自动忽略)" draw_text.color: secondary draw_text.text_style.font_size: 9}
+                                Label{width: Fill text: "AI 配图(可选增强 · 离线自动忽略)" draw_text.color: secondary draw_text.text_style.font_size: 12}
                                 Image{width: Fill height: 110 fit: ImageFit.CropToFill src: http_resource(img_url(ip_prompt, img_w(plan_kind), img_h(plan_kind), seed_of(it)))}
                             } else {
-                                Label{width: Fill text: "AI 配图 prompt(配图关 · 复制到生图工具用):" draw_text.color: secondary draw_text.text_style.font_size: 9}
-                                Label{width: Fill text: ip_prompt draw_text.color: ink draw_text.text_style.font_size: 10}
+                                Label{width: Fill text: "AI 配图 prompt(配图关 · 复制到生图工具用):" draw_text.color: secondary draw_text.text_style.font_size: 12}
+                                Label{width: Fill text: ip_prompt draw_text.color: ink draw_text.text_style.font_size: 14}
                             }
                         }
                     }
@@ -2992,7 +3110,7 @@ root := SolidView{width: Fill height: Fill flow: Down padding: 16 spacing: 10 dr
                 }
                 }}
             }
-            plan_word := Label{width: Fill text: "" draw_text.color: secondary draw_text.text_style.font_size: 11}
+            plan_word := Label{width: Fill text: "" draw_text.color: secondary draw_text.text_style.font_size: 12}
             View{width: Fill height: Fit flow: Right spacing: 8 align: Align{y: 0.5}
                 ButtonFlat{text: "返回广场" height: 40 padding: Inset{left: 14 right: 14} on_click: || goto(0)
                     draw_bg +: {color: chip_bg color_hover: warm_hover border_radius: 20.0 border_size: 0.0}
@@ -3018,8 +3136,8 @@ root := SolidView{width: Fill height: Fill flow: Down padding: 16 spacing: 10 dr
         }
 
         export_view := View{width: Fill height: Fill flow: Down spacing: 10 visible: (mode == 4)
-            Label{text: "导出" draw_text.color: ink draw_text.text_style: theme.font_bold{font_size: 20}}
-            export_hint := Label{width: Fill text: "" draw_text.color: secondary draw_text.text_style.font_size: 11}
+            Label{text: "导出" draw_text.color: ink draw_text.text_style: theme.font_bold{font_size: 22}}
+            export_hint := Label{width: Fill text: "" draw_text.color: secondary draw_text.text_style.font_size: 12}
             export_formats := ScrollXView{width: Fill height: Fit flow: Right spacing: 6 on_render: || {
                 let fs = kind_formats(plan_kind)
                 for f in fs {
@@ -3027,7 +3145,7 @@ root := SolidView{width: Fill height: Fill flow: Down padding: 16 spacing: 10 dr
                         on_click: || { plan_format = f["id"]; ui.export_body.set_text(render_plan_as_text()); ui.export_hint.set_text(format_hint(plan_format)); ui.export_formats.render() }
                         draw_bg +: {color: (if plan_format == f["id"] {accent} else {chip_bg}) color_hover: (if plan_format == f["id"] {#xff8866} else {warm_hover}) border_radius: 16.0 border_size: 0.0}
                         draw_text +: {color: (if plan_format == f["id"] {#xffffff} else {ink}) color_hover: (if plan_format == f["id"] {#xffffff} else {ink}) }
-                        draw_text.text_style.font_size: 10}
+                        draw_text.text_style.font_size: 12}
                 }
             }}
             ScrollYView{width: Fill height: Fill flow: Down padding: Inset{left: 14 right: 14 top: 14 bottom: 14} spacing: 12
@@ -3046,7 +3164,7 @@ root := SolidView{width: Fill height: Fill flow: Down padding: 16 spacing: 10 dr
                     draw_bg +: {color: accent color_hover: #xff8866 border_radius: 20.0 border_size: 0.0}
                     draw_text +: {color: #xffffff color_hover: #xffffff}}
             }
-            copy_status_label := Label{width: Fill text: copy_status draw_text.color: secondary draw_text.text_style.font_size: 11}
+            copy_status_label := Label{width: Fill text: copy_status draw_text.color: secondary draw_text.text_style.font_size: 12}
         }
     }
 }
